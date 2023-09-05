@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Data models
+enum Role {
+  CLIENT
+  RELATIVE
+  STAFF
+}
+
+model User {
+  uuid            String           @id @default(uuid())
+  email           String           @unique
+  firstName       String
+  lastName        String
+  password        String
+  address         String?
+  phoneNumber     String?
+  role            Role
+  isAdmin         Boolean          @default(false)
+  client          Client?
+  clientRelatives ClientRelative[]
+  createdEvents   Event[]          @relation("createdBookings")
+  updatedEvents   Event[]          @relation("updatedBookings")
+  events          Event[]
+}
+
+enum SemesterPlan {
+  FULL
+  HALF
+}
+
+model Client {
+  uuid                 String           @id @default(uuid())
+  firstName            String
+  lastName             String
+  bornAt               DateTime
+  numberOfReservations Int              @default(0)
+  assets               ClientAsset[]
+  semester             Semester         @relation(fields: [semesterId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  semesterId           String
+  semesterPlan         SemesterPlan
+  user                 User?            @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  userId               String?          @unique
+  relatives            ClientRelative[]
+}
+
+model ClientRelative {
+  user     User   @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  userId   String @unique
+  client   Client @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  clientId String @unique
+}
+
+model ClientAsset {
+  client   Client @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  clientId String @unique
+  asset    Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assetId  Int    @unique
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+model Asset {
+  id      Int           @id @default(autoincrement())
+  name    String
+  status  Status        @default(ACTIVE)
+  clients ClientAsset[]
+  events  Event[]
+}
+
+model Event {
+  uuid            String   @id @default(uuid())
+  asset           Asset    @relation(fields: [assetId], references: [id])
+  assetId         Int
+  user            User     @relation(fields: [uuid], references: [uuid])
+  startAt         DateTime
+  endAt           DateTime
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       User     @relation("createdBookings", fields: [creatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  updatedBy       User?    @relation("updatedBookings", fields: [updatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  creatingStaffId String
+  updatingStaffId String?
+}
+
+enum SemesterPeriod {
+  SPRING
+  FALL
+}
+
+model Semester {
+  uuid           String                   @id @default(uuid())
+  startAt        DateTime
+  endAt          DateTime
+  period         SemesterPeriod
+  clients        Client[]
+  unavailability SemesterUnavailability[]
+}
+
+model SemesterUnavailability {
+  startAt    DateTime
+  endAt      DateTime
+  semester   Semester @relation(fields: [semesterId], references: [uuid])
+  semesterId String   @unique
+}
