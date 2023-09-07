@@ -29,12 +29,12 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
+  createUser(@Body() createUserDto: CreateUserDto) {
     return this.usersService.createUser(createUserDto);
   }
 
   @Get()
-  findAll() {
+  findAllUsers() {
     return this.usersService.findAllUsers();
   }
 
@@ -44,17 +44,20 @@ export class UsersController {
   }
 
   @Get(':uuid')
-  findOne(@Param('uuid') uuid: string) {
+  findOneUser(@Param('uuid') uuid: string) {
     return this.usersService.findOneUser(uuid);
   }
 
   @Patch(':uuid')
-  update(@Param('uuid') uuid: string, @Body() updateUserDto: UpdateUserDto) {
+  updateUser(
+    @Param('uuid') uuid: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     return this.usersService.updateUser(uuid, updateUserDto);
   }
 
   @Delete(':uuid')
-  remove(@Param('uuid') uuid: string) {
+  removeUser(@Param('uuid') uuid: string) {
     return this.usersService.removeUser(uuid);
   }
 }
