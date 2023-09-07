@@ -36,8 +36,8 @@ export class UsersService {
     return this.prisma.user.findUniqueOrThrow({ where: { uuid } });
   }
 
-  update(uuid: string, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${uuid} user`;
+  updateUser(uuid: string, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({ where: { uuid }, data: updateUserDto });
   }
 
   remove(uuid: string) {
