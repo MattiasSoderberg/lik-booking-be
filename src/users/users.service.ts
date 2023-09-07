@@ -21,18 +21,18 @@ export class UsersService {
     return this.prisma.client.findUniqueOrThrow({ where: { uuid } });
   }
 
-  async create(createUserDto: CreateUserDto) {
+  async createUser(createUserDto: CreateUserDto) {
     const hashedPassword = await hash(createUserDto.password, 10);
     createUserDto.password = hashedPassword;
 
     return this.prisma.user.create({ data: createUserDto }); // TODO remove password from return
   }
 
-  findAll() {
+  findAllUsers() {
     return this.prisma.user.findMany({});
   }
 
-  findOne(uuid: string) {
+  findOneUser(uuid: string) {
     return this.prisma.user.findUniqueOrThrow({ where: { uuid } });
   }
 
@@ -40,7 +40,7 @@ export class UsersService {
     return this.prisma.user.update({ where: { uuid }, data: updateUserDto });
   }
 
-  remove(uuid: string) {
+  removeUser(uuid: string) {
     return `This action removes a #${uuid} user`;
   }
 }
