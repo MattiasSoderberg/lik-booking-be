@@ -10,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Data models
+// DATA MODELS AND ENUMS
 enum Role {
   CLIENT
   RELATIVE
@@ -34,67 +34,48 @@ model User {
   events          Event[]
 }
 
-enum SemesterPlan {
-  FULL
-  HALF
-}
-
 model Client {
-  uuid                 String           @id @default(uuid())
-  firstName            String
-  lastName             String
-  bornAt               DateTime
-  numberOfReservations Int              @default(0)
-  assets               ClientAsset[]
-  semester             Semester         @relation(fields: [semesterId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  semesterId           String
-  semesterPlan         SemesterPlan
-  user                 User?            @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  userId               String?          @unique
-  relatives            ClientRelative[]
+  uuid      String           @id @default(uuid())
+  firstName String
+  lastName  String
+  bornAt    DateTime         @db.Date
+  assets    ClientAsset[]
+  schedules Schedule[]
+  events    Event[]
+  user      User?            @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  userId    String?          @unique
+  relatives ClientRelative[]
+  note      String?
 }
 
 model ClientRelative {
-  user     User   @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  userId   String @unique
-  client   Client @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  clientId String @unique
+  user     User    @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  userId   String  @unique
+  client   Client  @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  clientId String  @unique
+  note     String?
 }
 
 model ClientAsset {
-  client   Client @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  clientId String @unique
-  asset    Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  assetId  Int    @unique
+  client   Client  @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  clientId String  @unique
+  asset    Asset   @relation(fields: [assetId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  assetId  String  @unique
+  note     String?
 }
 
-enum Status {
+enum AssetStatus {
   ACTIVE
   INACTIVE
 }
 
 model Asset {
-  id      Int           @id @default(autoincrement())
-  name    String
-  status  Status        @default(ACTIVE)
+  uuid    String        @id @default(uuid())
+  name    String        @unique
+  status  AssetStatus   @default(ACTIVE)
   clients ClientAsset[]
   events  Event[]
-}
-
-model Event {
-  uuid            String   @id @default(uuid())
-  asset           Asset    @relation(fields: [assetId], references: [id])
-  assetId         Int
-  user            User     @relation(fields: [uuid], references: [uuid])
-  startAt         DateTime
-  endAt           DateTime
-  note            String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  createdBy       User     @relation("createdBookings", fields: [creatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  updatedBy       User?    @relation("updatedBookings", fields: [updatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  creatingStaffId String
-  updatingStaffId String?
+  note    String?
 }
 
 enum SemesterPeriod {
@@ -103,17 +84,65 @@ enum SemesterPeriod {
 }
 
 model Semester {
-  uuid           String                   @id @default(uuid())
-  startAt        DateTime
-  endAt          DateTime
-  period         SemesterPeriod
-  clients        Client[]
-  unavailability SemesterUnavailability[]
+  uuid      String         @id @default(uuid())
+  startAt   DateTime       @db.Date
+  endAt     DateTime       @db.Date
+  period    SemesterPeriod
+  schedules Schedule[]
 }
 
-model SemesterUnavailability {
-  startAt    DateTime
-  endAt      DateTime
-  semester   Semester @relation(fields: [semesterId], references: [uuid])
-  semesterId String   @unique
+enum SemesterPlan {
+  FULL
+  HALF
+}
+
+model Schedule {
+  uuid         String          @id @default(uuid())
+  client       Client          @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  clientId     String
+  semesterPlan SemesterPlan
+  events       ScheduleEvent[]
+  semester     Semester        @relation(fields: [semesterId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  semesterId   String
+}
+
+model ScheduleEvent {
+  schedule   Schedule @relation(fields: [scheduleId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  scheduleId String   @unique
+  event      Event    @relation(fields: [eventId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  eventId    String   @unique
+  note       String?
+}
+
+enum EventType {
+  ACTIVE
+  BLOCKING
+}
+
+model Event {
+  uuid            String         @id @default(uuid())
+  asset           Asset          @relation(fields: [assetId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  assetId         String
+  user            User           @relation(fields: [uuid], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  client          Client         @relation(fields: [clientId], references: [uuid])
+  clientId        String
+  startAt         DateTime
+  endAt           DateTime
+  note            String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       User           @relation("createdBookings", fields: [creatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  updatedBy       User?          @relation("updatedBookings", fields: [updatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  creatingStaffId String
+  updatingStaffId String?
+  shedule         ScheduleEvent?
+  eventGroup      EventGroup?    @relation(fields: [eventGroupId], references: [id])
+  eventGroupId    Int
+}
+
+model EventGroup {
+  id      Int      @id @default(autoincrement())
+  startAt DateTime @db.Time()
+  endAt   DateTime @db.Time()
+  events  Event[]
 }
