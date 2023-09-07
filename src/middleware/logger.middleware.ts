@@ -1,5 +1,4 @@
 import { Injectable, Logger, NestMiddleware } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
 
 @Injectable()
