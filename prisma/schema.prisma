@@ -23,7 +23,7 @@ model User {
   firstName       String
   lastName        String
   password        String
-  address         String?
+  address         Json?
   phoneNumber     String?
   role            Role
   isAdmin         Boolean          @default(false)
