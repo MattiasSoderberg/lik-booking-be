@@ -25,15 +25,15 @@ export class UsersService {
     const hashedPassword = await hash(createUserDto.password, 10);
     createUserDto.password = hashedPassword;
 
-    return this.prisma.user.create({ data: createUserDto });
+    return this.prisma.user.create({ data: createUserDto }); // TODO remove password from return
   }
 
   findAll() {
-    return `This action returns all users`;
+    return this.prisma.user.findMany({});
   }
 
   findOne(uuid: string) {
-    return `This action returns a #${uuid} user`;
+    return this.prisma.user.findUniqueOrThrow({ where: { uuid } });
   }
 
   update(uuid: string, updateUserDto: UpdateUserDto) {
