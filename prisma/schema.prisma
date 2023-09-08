@@ -23,7 +23,7 @@ model User {
   firstName       String
   lastName        String
   password        String
-  address         Json?
+  address         Address?         @relation(fields: [uuid], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   phoneNumber     String?
   role            Role
   isAdmin         Boolean          @default(false)
@@ -32,6 +32,14 @@ model User {
   createdEvents   Event[]          @relation("createdBookings")
   updatedEvents   Event[]          @relation("updatedBookings")
   events          Event[]
+}
+
+model Address {
+  uuid    String @id @default(uuid())
+  street  String
+  zipCode String
+  area    String
+  users   User[]
 }
 
 model Client {
