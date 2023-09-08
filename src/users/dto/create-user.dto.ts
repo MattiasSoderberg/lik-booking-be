@@ -1,10 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsEmail, IsOptional } from 'class-validator';
+import { Exclude, Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsNumberString,
+  IsEnum,
+  IsPhoneNumber,
+  ValidateNested,
+} from 'class-validator';
 
 enum Role {
   Client = 'CLIENT',
   Relative = 'RELATIVE',
   Staff = 'STAFF',
+}
+
+export class AddressDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  street: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsNumberString()
+  zipCode: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  area: string;
 }
 
 export class CreateUserDto {
@@ -22,18 +49,22 @@ export class CreateUserDto {
 
   @ApiProperty()
   @IsNotEmpty()
+  // @Exclude()
   password: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsNotEmpty()
-  address: string;
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address: AddressDto;
 
   @ApiProperty({ required: false })
   @IsNotEmpty()
+  @IsPhoneNumber('SE')
   phoneNumber: string;
 
   @ApiProperty({ enum: Role })
+  @IsEnum(Role)
   @IsNotEmpty()
   role: Role;
 
@@ -41,7 +72,4 @@ export class CreateUserDto {
   @IsOptional()
   @IsNotEmpty()
   isAdmin: boolean;
-
-  // @ApiProperty({ required: false })
-  // client: string;
 }
