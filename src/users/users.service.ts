@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { AddressDto, CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -10,7 +10,8 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   createClient(createClientDto: CreateClientDto) {
-    return 'Creating client';
+    // return this.prisma.client.create({ data: createClientDto });
+    return 'client create';
   }
 
   findAllClients() {
@@ -22,22 +23,43 @@ export class UsersService {
   }
 
   async createUser(createUserDto: CreateUserDto) {
-    const hashedPassword = await hash(createUserDto.password, 10);
-    createUserDto.password = hashedPassword;
+    const { address, ...userdata } = createUserDto;
+    const hashedPassword = await hash(userdata.password, 10);
+    userdata.password = hashedPassword;
 
-    return this.prisma.user.create({ data: createUserDto }); // TODO remove password from return
+    const user = await this.prisma.user.create({
+      data: { ...userdata, address: { create: address } },
+      include: { address: true },
+    });
+
+    return user; // TODO remove password from return
   }
 
   findAllUsers() {
-    return this.prisma.user.findMany({});
+    return this.prisma.user.findMany({ include: { address: true } });
   }
 
   findOneUser(uuid: string) {
     return this.prisma.user.findUniqueOrThrow({ where: { uuid } });
   }
 
-  updateUser(uuid: string, updateUserDto: UpdateUserDto) {
-    return this.prisma.user.update({ where: { uuid }, data: updateUserDto });
+  async updateUser(uuid: string, updateUserDto: UpdateUserDto) {
+    const { address, ...userData } = updateUserDto;
+    const user = await this.prisma.user.update({
+      where: { uuid },
+      data: {
+        ...userData,
+        address: {
+          upsert: {
+            where: { uuid },
+            create: address,
+            update: address,
+          },
+        },
+      },
+      include: { address: true },
+    });
+    return user;
   }
 
   removeUser(uuid: string) {
