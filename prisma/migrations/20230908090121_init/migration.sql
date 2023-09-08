@@ -20,12 +20,21 @@ CREATE TABLE "User" (
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "password" TEXT NOT NULL,
-    "address" TEXT,
     "phoneNumber" TEXT,
     "role" "Role" NOT NULL,
     "isAdmin" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("uuid")
+);
+
+-- CreateTable
+CREATE TABLE "Address" (
+    "uuid" TEXT NOT NULL,
+    "street" TEXT NOT NULL,
+    "zipCode" TEXT NOT NULL,
+    "area" TEXT NOT NULL,
+
+    CONSTRAINT "Address_pkey" PRIMARY KEY ("uuid")
 );
 
 -- CreateTable
@@ -143,6 +152,9 @@ CREATE UNIQUE INDEX "ScheduleEvent_scheduleId_key" ON "ScheduleEvent"("scheduleI
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ScheduleEvent_eventId_key" ON "ScheduleEvent"("eventId");
+
+-- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_uuid_fkey" FOREIGN KEY ("uuid") REFERENCES "Address"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Client" ADD CONSTRAINT "Client_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
