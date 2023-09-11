@@ -7,6 +7,7 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { APP_FILTER } from '@nestjs/core';
 import { ExceptionLoggerFilter } from './filters/exception-logger.filters';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   controllers: [AppController],
@@ -14,7 +15,7 @@ import { ExceptionLoggerFilter } from './filters/exception-logger.filters';
     AppService,
     { provide: APP_FILTER, useClass: ExceptionLoggerFilter },
   ],
-  imports: [UsersModule, EventsModule, SchedulesModule],
+  imports: [UsersModule, EventsModule, SchedulesModule, AuthModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
