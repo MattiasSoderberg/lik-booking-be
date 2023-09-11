@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { AddressDto, CreateUserDto } from './dto/create-user.dto';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { hash } from 'bcrypt';
+import { Prisma } from '@prisma/client';
+import { PrismaErrors } from 'src/utils/prisma-errors.enum';
+import { UserExists } from './exceptions/user-exists.exception';
 
 @Injectable()
 export class UsersService {
@@ -37,7 +40,9 @@ export class UsersService {
       });
       return client;
     } catch (error) {
-      console.error('ERROR CREATING CLIENT: ', error);
+      throw new InternalServerErrorException(
+        'Something went wrong when creating clielnt.',
+      );
     }
   }
 
@@ -67,7 +72,15 @@ export class UsersService {
 
       return user;
     } catch (error) {
-      console.error('ERROR CREATING USER: ', error);
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error?.code === PrismaErrors.UniqueConstraintError
+      ) {
+        throw new UserExists(createUserDto.email);
+      }
+      throw new InternalServerErrorException(
+        'Something went wrong when creating user.',
+      );
     }
   }
 
