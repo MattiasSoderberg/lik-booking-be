@@ -4,7 +4,6 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { TransformDataInterceptor } from './utils/transformData.interceptor';
 import { UserResponseDto } from './users/dto/response-user.dto';
-import { HttpExceptionFilter } from './filters/http-exception.filters';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,7 +15,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformDataInterceptor(UserResponseDto));
 
   const config = new DocumentBuilder()
