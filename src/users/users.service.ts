@@ -9,13 +9,45 @@ import { hash } from 'bcrypt';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  createClient(createClientDto: CreateClientDto) {
-    // return this.prisma.client.create({ data: createClientDto });
-    return 'client create';
+  async createClient(createClientDto: CreateClientDto) {
+    const { assets, relatives, user, ...clientData } = createClientDto;
+
+    try {
+      const client = await this.prisma.client.create({
+        data: {
+          ...clientData,
+          relatives: {
+            connectOrCreate: relatives.map((relative) => {
+              return {
+                where: relative,
+                create: relative,
+              };
+            }),
+          },
+          assets: {
+            connectOrCreate: assets.map((asset) => {
+              return {
+                where: asset,
+                create: asset,
+              };
+            }),
+          },
+        },
+        include: { relatives: true, assets: true },
+      });
+      return client;
+    } catch (error) {
+      console.error('ERROR CREATING CLIENT: ', error);
+    }
   }
 
   findAllClients() {
-    return this.prisma.client.findMany({});
+    return this.prisma.client.findMany({
+      include: {
+        relatives: { include: { user: true } },
+        assets: { include: { asset: true } },
+      },
+    });
   }
 
   findOneClient(uuid) {
@@ -27,12 +59,16 @@ export class UsersService {
     const hashedPassword = await hash(userdata.password, 10);
     userdata.password = hashedPassword;
 
-    const user = await this.prisma.user.create({
-      data: { ...userdata, address: { create: address } },
-      include: { address: true },
-    });
+    try {
+      const user = await this.prisma.user.create({
+        data: { ...userdata, address: { create: address } },
+        include: { address: true },
+      });
 
-    return user; // TODO remove password from return
+      return user;
+    } catch (error) {
+      console.error('ERROR CREATING USER: ', error);
+    }
   }
 
   findAllUsers() {
@@ -40,7 +76,10 @@ export class UsersService {
   }
 
   findOneUser(uuid: string) {
-    return this.prisma.user.findUniqueOrThrow({ where: { uuid } });
+    return this.prisma.user.findUniqueOrThrow({
+      where: { uuid },
+      include: { address: true },
+    });
   }
 
   async updateUser(uuid: string, updateUserDto: UpdateUserDto) {
