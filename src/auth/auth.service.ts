@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { SignInDto } from './sign-in.dto';
 import { JwtService } from '@nestjs/jwt';
+import { compare } from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -11,8 +12,26 @@ export class AuthService {
   ) {}
 
   async signIn(signInDto: SignInDto) {
-    const user = await this.usersService.findOneUserByEmail(signInDto['email']);
-    console.log('USER IN AUTH', signInDto['email'], user);
-    return 'Signing in';
+    const { email, password } = signInDto;
+    const user = await this.usersService.findOneUserByEmail(email);
+    if (!user) {
+      throw new BadRequestException('Email or password is incorrect.');
+    }
+    await this.varifyPassword(password, user?.password);
+
+    const payload = { sub: user?.uuid, email: user?.email };
+    const token = { accessToken: await this.jwtService.signAsync(payload) };
+
+    return token;
+  }
+
+  private async varifyPassword(
+    plainTextPassword: string,
+    hashedPassword: string,
+  ) {
+    const isValidPassword = await compare(plainTextPassword, hashedPassword);
+    if (!isValidPassword) {
+      throw new BadRequestException('Email or password is incorrect.');
+    }
   }
 }
