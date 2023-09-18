@@ -11,12 +11,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-enum Role {
-  Client = 'CLIENT',
-  Relative = 'RELATIVE',
-  Staff = 'STAFF',
-}
-
 export class AddressDto {
   @ApiProperty()
   @IsString()
@@ -62,13 +56,13 @@ export class CreateUserDto {
   @IsPhoneNumber('SE')
   phoneNumber: string;
 
-  @ApiProperty({ enum: Role })
-  @IsEnum(Role)
+  @ApiProperty()
+  // @IsEnum(Role)
   @IsNotEmpty()
-  role: Role;
+  role: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsNotEmpty()
-  isAdmin: boolean;
+  // @ApiProperty({ required: false })
+  // @IsOptional()
+  // @IsNotEmpty()
+  // isAdmin: boolean;
 }

@@ -1,4 +1,4 @@
-import { $Enums, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { Exclude } from 'class-transformer';
 export class UserResponseDto implements User {
   uuid: string;
@@ -6,8 +6,8 @@ export class UserResponseDto implements User {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  role: $Enums.Role;
-  isAdmin: boolean;
+  roleId: number;
+  addressId: string;
 
   @Exclude()
   password: string;
