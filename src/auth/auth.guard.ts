@@ -7,13 +7,17 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { IS_PUBLIC_KEY } from './auth.decorator';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { UsersService } from 'src/users/users.service';
+import { AuthAbility } from './auth.ability';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
     private reflector: Reflector,
+    private authAbility: AuthAbility,
+    private usersService: UsersService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -25,7 +29,7 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request: Request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
@@ -37,10 +41,16 @@ export class AuthGuard implements CanActivate {
         secret: process.env.JWT_SECRET,
       });
 
-      request['user'] = payload;
+      request['user'] = await this.usersService.getUserWPermissions(
+        payload.sub,
+      );
     } catch (error) {
       throw new UnauthorizedException();
     }
+
+    const ability = await this.authAbility.createAbility(request['user']);
+
+    request['ability'] = ability;
 
     return true;
   }
