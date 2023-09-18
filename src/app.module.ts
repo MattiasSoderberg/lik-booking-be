@@ -14,7 +14,7 @@ import { AuthGuard } from './auth/auth.guard';
   controllers: [AppController],
   providers: [
     AppService,
-    { provide: APP_FILTER, useClass: ExceptionLoggerFilter },
+    // { provide: APP_FILTER, useClass: ExceptionLoggerFilter },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
   imports: [UsersModule, EventsModule, SchedulesModule, AuthModule],
