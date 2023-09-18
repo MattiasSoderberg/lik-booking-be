@@ -6,12 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { AuthenticatedRequest } from 'src/auth/auth.interface';
 
 @ApiTags('Users')
 @Controller('users')
@@ -28,14 +30,25 @@ export class UsersController {
     return this.usersService.findAllClients();
   }
 
+  @Get('me')
+  findMe(@Request() req: AuthenticatedRequest) {
+    const { ability, user } = req;
+    return this.usersService.findMe(ability, user);
+  }
+
   @Post()
-  createUser(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.createUser(createUserDto);
+  createUser(
+    @Body() createUserDto: CreateUserDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.usersService.createUser(createUserDto, ability);
   }
 
   @Get()
-  findAllUsers() {
-    return this.usersService.findAllUsers();
+  findAllUsers(@Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.usersService.findAllUsers(ability);
   }
 
   @Get('clients/:uuid')
@@ -44,8 +57,13 @@ export class UsersController {
   }
 
   @Get(':uuid')
-  findOneUser(@Param('uuid') uuid: string) {
-    return this.usersService.findOneUser(uuid);
+  findOneUser(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability, user } = req;
+
+    return this.usersService.findOneUser(uuid, ability, user);
   }
 
   @Patch(':uuid')
