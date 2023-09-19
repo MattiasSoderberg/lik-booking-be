@@ -46,7 +46,6 @@ export class AuthAbility {
     Object.entries(userRules).forEach((rule) =>
       can(rule[1].actions, rule[0] as any, rule[1]?.conditions),
     );
-    console.log('RULES', rules);
 
     return rules;
   }
