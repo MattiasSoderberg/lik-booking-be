@@ -21,13 +21,18 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('clients')
-  createClient(@Body() createClientDto: CreateClientDto) {
-    return this.usersService.createClient(createClientDto);
+  createClient(
+    @Body() createClientDto: CreateClientDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.usersService.createClient(createClientDto, ability);
   }
 
   @Get('clients')
-  findAllClients() {
-    return this.usersService.findAllClients();
+  findAllClients(@Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.usersService.findAllClients(ability);
   }
 
   @Get('me')
