@@ -61,7 +61,7 @@ export class UsersService {
 
   findAllClients(ability: AppAbility) {
     if (!ability.can(Action.Read, 'Client')) {
-      throw new ForbiddenException('Forbidden resource.');
+      throw new ForbiddenException('No permissions for route.');
     }
     return this.prisma.client.findMany({
       include: {
@@ -116,7 +116,7 @@ export class UsersService {
     try {
       return this.prisma.user.findMany({ where: accessibleBy(ability).User });
     } catch (error) {
-      console.log('FIND ALL ERROR', error);
+      throw new ForbiddenException('No permissions for route.');
     }
   }
 
