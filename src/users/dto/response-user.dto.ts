@@ -7,7 +7,7 @@ export class UserResponseDto implements User {
   lastName: string;
   phoneNumber: string;
   roleId: number;
-  addressId: string;
+  addressId: number;
 
   @Exclude()
   password: string;
