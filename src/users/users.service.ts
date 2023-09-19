@@ -93,13 +93,24 @@ export class UsersService {
       throw new ForbiddenException('Admin route');
     }
 
+    const dataToCreate = {
+      ...userdata,
+      role: { connect: { id: RoleEnum[role] } },
+    };
+
+    if (address) {
+      const { street, zipCode, area } = address;
+      dataToCreate['address'] = {
+        connectOrCreate: {
+          where: { address_identifier: { street, zipCode, area } },
+          create: address,
+        },
+      };
+    }
+
     try {
       const user = await this.prisma.user.create({
-        data: {
-          ...userdata,
-          address: { create: address },
-          role: { connect: { id: RoleEnum[role] } },
-        },
+        data: dataToCreate,
         include: { address: true },
       });
 
