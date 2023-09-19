@@ -71,8 +71,17 @@ export class UsersService {
     });
   }
 
-  findOneClient(uuid) {
-    return this.prisma.client.findUniqueOrThrow({ where: { uuid } });
+  findOneClient(uuid: string, ability: AppAbility) {
+    if (!ability.can(Action.Read, 'Client')) {
+      throw new ForbiddenException('No permissions for route.');
+    }
+    try {
+      return this.prisma.client.findFirst({
+        where: { AND: [accessibleBy(ability).Client, { uuid }] },
+      });
+    } catch (error) {
+      throw new ForbiddenException('Forbidden resource.');
+    }
   }
 
   async createUser(createUserDto: CreateUserDto, ability) {
@@ -128,7 +137,7 @@ export class UsersService {
         },
       });
     } catch (error) {
-      throw new ForbiddenException(error);
+      throw new ForbiddenException('Forbidden resource.');
     }
   }
 
