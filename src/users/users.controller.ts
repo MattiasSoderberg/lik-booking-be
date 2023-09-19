@@ -57,8 +57,12 @@ export class UsersController {
   }
 
   @Get('clients/:uuid')
-  findOneClient(@Param('uuid') uuid: string) {
-    return this.usersService.findOneClient(uuid);
+  findOneClient(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.usersService.findOneClient(uuid, ability);
   }
 
   @Get(':uuid')
