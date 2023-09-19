@@ -10,11 +10,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// DATA MODELS AND ENUMS
-enum Role {
-  CLIENT
-  RELATIVE
-  STAFF
+model Role {
+  id          Int          @id
+  name        String
+  user        User[]
+  permissions Permission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id         Int    @id
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roleId     Int
+  action     String
+  subject    String
+  conditions Json?
+
+  @@map("permissions")
 }
 
 model User {
@@ -23,15 +36,29 @@ model User {
   firstName       String
   lastName        String
   password        String
-  address         String?
+  address         Address?         @relation(fields: [addressId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  addressId       Int?
   phoneNumber     String?
-  role            Role
-  isAdmin         Boolean          @default(false)
+  role            Role             @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roleId          Int
   client          Client?
   clientRelatives ClientRelative[]
   createdEvents   Event[]          @relation("createdBookings")
   updatedEvents   Event[]          @relation("updatedBookings")
   events          Event[]
+
+  @@map("users")
+}
+
+model Address {
+  id      Int    @id @default(autoincrement())
+  street  String
+  zipCode String
+  area    String
+  users   User[]
+
+  @@unique(fields: [street, zipCode, area], name: "address_identifier")
+  @@map("addresses")
 }
 
 model Client {
@@ -46,6 +73,8 @@ model Client {
   userId    String?          @unique
   relatives ClientRelative[]
   note      String?
+
+  @@map("clients")
 }
 
 model ClientRelative {
@@ -54,6 +83,8 @@ model ClientRelative {
   client   Client  @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   clientId String  @unique
   note     String?
+
+  @@map("client_relative")
 }
 
 model ClientAsset {
@@ -62,6 +93,8 @@ model ClientAsset {
   asset    Asset   @relation(fields: [assetId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   assetId  String  @unique
   note     String?
+
+  @@map("client_asset")
 }
 
 enum AssetStatus {
@@ -76,6 +109,8 @@ model Asset {
   clients ClientAsset[]
   events  Event[]
   note    String?
+
+  @@map("assets")
 }
 
 enum SemesterPeriod {
@@ -89,6 +124,8 @@ model Semester {
   endAt     DateTime       @db.Date
   period    SemesterPeriod
   schedules Schedule[]
+
+  @@map("semesters")
 }
 
 enum SemesterPlan {
@@ -104,6 +141,8 @@ model Schedule {
   events       ScheduleEvent[]
   semester     Semester        @relation(fields: [semesterId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   semesterId   String
+
+  @@map("schedules")
 }
 
 model ScheduleEvent {
@@ -112,6 +151,8 @@ model ScheduleEvent {
   event      Event    @relation(fields: [eventId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   eventId    String   @unique
   note       String?
+
+  @@map("schedule_event")
 }
 
 enum EventType {
@@ -138,6 +179,8 @@ model Event {
   shedule         ScheduleEvent?
   eventGroup      EventGroup?    @relation(fields: [eventGroupId], references: [id])
   eventGroupId    Int
+
+  @@map("events")
 }
 
 model EventGroup {
@@ -145,4 +188,6 @@ model EventGroup {
   startAt DateTime @db.Time()
   endAt   DateTime @db.Time()
   events  Event[]
+
+  @@map("event_groups")
 }

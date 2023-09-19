@@ -6,12 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { AuthenticatedRequest } from 'src/auth/auth.interface';
 
 @ApiTags('Users')
 @Controller('users')
@@ -19,42 +21,70 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('clients')
-  createClient(@Body() createClientDto: CreateClientDto) {
-    return this.usersService.createClient(createClientDto);
+  createClient(
+    @Body() createClientDto: CreateClientDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.usersService.createClient(createClientDto, ability);
   }
 
   @Get('clients')
-  findAllClients() {
-    return this.usersService.findAllClients();
+  findAllClients(@Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.usersService.findAllClients(ability);
+  }
+
+  @Get('me')
+  findMe(@Request() req: AuthenticatedRequest) {
+    const { user } = req;
+    return this.usersService.findMe(user);
   }
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  createUser(
+    @Body() createUserDto: CreateUserDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.usersService.createUser(createUserDto, ability);
   }
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAllUsers(@Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.usersService.findAllUsers(ability);
   }
 
   @Get('clients/:uuid')
-  findOneClient(@Param('uuid') uuid: string) {
-    return this.usersService.findOneClient(uuid);
+  findOneClient(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.usersService.findOneClient(uuid, ability);
   }
 
   @Get(':uuid')
-  findOne(@Param('uuid') uuid: string) {
-    return this.usersService.findOne(uuid);
+  findOneUser(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+
+    return this.usersService.findOneUser(uuid, ability);
   }
 
   @Patch(':uuid')
-  update(@Param('uuid') uuid: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(uuid, updateUserDto);
+  updateUser(
+    @Param('uuid') uuid: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.usersService.updateUser(uuid, updateUserDto);
   }
 
   @Delete(':uuid')
-  remove(@Param('uuid') uuid: string) {
-    return this.usersService.remove(uuid);
+  removeUser(@Param('uuid') uuid: string) {
+    return this.usersService.removeUser(uuid);
   }
 }
