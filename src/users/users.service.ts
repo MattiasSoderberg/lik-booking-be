@@ -21,7 +21,11 @@ import { Action } from 'src/utils/action.enum';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async createClient(createClientDto: CreateClientDto) {
+  async createClient(createClientDto: CreateClientDto, ability: AppAbility) {
+    if (ability.can(Action.Manage, 'all')) {
+      throw new ForbiddenException('Admin route');
+    }
+
     const { assets, relatives, user, ...clientData } = createClientDto;
 
     try {
@@ -55,7 +59,10 @@ export class UsersService {
     }
   }
 
-  findAllClients() {
+  findAllClients(ability: AppAbility) {
+    if (!ability.can(Action.Read, 'Client')) {
+      throw new ForbiddenException('Forbidden resource.');
+    }
     return this.prisma.client.findMany({
       include: {
         relatives: { include: { user: true } },
