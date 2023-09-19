@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { hash } from 'bcrypt';
 
 export const roles = [
   {
@@ -164,6 +165,8 @@ async function main() {
 
   for await (const user of users) {
     const { address, role, ...userData } = user;
+    const hashedPassword = await hash(userData.password, 10);
+    userData['password'] = hashedPassword;
     const dataToCreate = {
       ...userData,
       role: { connect: { id: role } },
@@ -177,7 +180,11 @@ async function main() {
         },
       };
     }
-    const result = await prisma.user.create({ data: dataToCreate });
+    const result = await prisma.user.upsert({
+      where: { email: dataToCreate.email },
+      create: dataToCreate,
+      update: dataToCreate,
+    });
     if (result) {
       userCount++;
     }
