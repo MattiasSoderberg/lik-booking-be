@@ -11,11 +11,13 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { hash } from 'bcrypt';
 import { Prisma, User } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
-import { UserExists } from './exceptions/user-exists.exception';
+import { UserExistsException } from './exceptions/user-exists.exception';
 import { RoleEnum } from 'src/utils/role.enum';
 import { AppAbility } from 'src/auth/auth.ability';
 import { accessibleBy } from '@casl/prisma';
 import { Action } from 'src/utils/action.enum';
+import { AdminRouteException } from 'src/auth/exceptions/admin-route.exception';
+import { ForbiddenResourceException } from 'src/auth/exceptions/forbidden-resource.exception';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +25,7 @@ export class UsersService {
 
   async createClient(createClientDto: CreateClientDto, ability: AppAbility) {
     if (ability.can(Action.Manage, 'all')) {
-      throw new ForbiddenException('Admin route');
+      throw new AdminRouteException();
     }
 
     const { assets, relatives, user, ...clientData } = createClientDto;
@@ -54,14 +56,14 @@ export class UsersService {
       return client;
     } catch (error) {
       throw new InternalServerErrorException(
-        'Something went wrong when creating clielnt.',
+        'Something went wrong when creating client.',
       );
     }
   }
 
   findAllClients(ability: AppAbility) {
     if (!ability.can(Action.Read, 'Client')) {
-      throw new ForbiddenException('No permissions for route.');
+      throw new ForbiddenResourceException();
     }
     return this.prisma.client.findMany({
       include: {
@@ -73,14 +75,14 @@ export class UsersService {
 
   findOneClient(uuid: string, ability: AppAbility) {
     if (!ability.can(Action.Read, 'Client')) {
-      throw new ForbiddenException('No permissions for route.');
+      throw new ForbiddenResourceException();
     }
     try {
       return this.prisma.client.findFirst({
         where: { AND: [accessibleBy(ability).Client, { uuid }] },
       });
     } catch (error) {
-      throw new ForbiddenException('Forbidden resource.');
+      throw new ForbiddenResourceException();
     }
   }
 
@@ -90,7 +92,7 @@ export class UsersService {
     userdata.password = hashedPassword;
 
     if (!ability.can(Action.Manage, 'all')) {
-      throw new ForbiddenException('Admin route');
+      throw new AdminRouteException();
     }
 
     const dataToCreate = {
@@ -120,7 +122,7 @@ export class UsersService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error?.code === PrismaErrors.UniqueConstraintError
       ) {
-        throw new UserExists(createUserDto.email);
+        throw new UserExistsException(createUserDto.email);
       }
       throw new InternalServerErrorException(
         'Something went wrong when creating user.',
@@ -136,7 +138,7 @@ export class UsersService {
     try {
       return this.prisma.user.findMany({ where: accessibleBy(ability).User });
     } catch (error) {
-      throw new ForbiddenException('No permissions for route.');
+      throw new ForbiddenResourceException();
     }
   }
 
@@ -148,7 +150,7 @@ export class UsersService {
         },
       });
     } catch (error) {
-      throw new ForbiddenException('Forbidden resource.');
+      throw new ForbiddenResourceException();
     }
   }
 
