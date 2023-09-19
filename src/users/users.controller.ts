@@ -37,8 +37,8 @@ export class UsersController {
 
   @Get('me')
   findMe(@Request() req: AuthenticatedRequest) {
-    const { ability, user } = req;
-    return this.usersService.findMe(ability, user);
+    const { user } = req;
+    return this.usersService.findMe(user);
   }
 
   @Post()
@@ -70,9 +70,9 @@ export class UsersController {
     @Param('uuid') uuid: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    const { ability, user } = req;
+    const { ability } = req;
 
-    return this.usersService.findOneUser(uuid, ability, user);
+    return this.usersService.findOneUser(uuid, ability);
   }
 
   @Patch(':uuid')

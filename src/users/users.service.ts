@@ -84,7 +84,7 @@ export class UsersService {
     }
   }
 
-  async createUser(createUserDto: CreateUserDto, ability) {
+  async createUser(createUserDto: CreateUserDto, ability: AppAbility) {
     const { address, role, ...userdata } = createUserDto;
     const hashedPassword = await hash(userdata.password, 10);
     userdata.password = hashedPassword;
@@ -128,7 +128,7 @@ export class UsersService {
     }
   }
 
-  findMe(ability: AppAbility, user: User) {
+  findMe(user: User) {
     return user;
   }
 
@@ -140,7 +140,7 @@ export class UsersService {
     }
   }
 
-  findOneUser(uuid: string, ability: AppAbility, user: User) {
+  findOneUser(uuid: string, ability: AppAbility) {
     try {
       return this.prisma.user.findFirst({
         where: {
