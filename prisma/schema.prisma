@@ -79,21 +79,23 @@ model Client {
 
 model ClientRelative {
   user     User    @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  userId   String  @unique
+  userId   String
   client   Client  @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  clientId String  @unique
+  clientId String
   note     String?
 
+  @@unique([userId, clientId], name: "client_relative_identifier")
   @@map("client_relative")
 }
 
 model ClientAsset {
   client   Client  @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  clientId String  @unique
+  clientId String
   asset    Asset   @relation(fields: [assetId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  assetId  String  @unique
+  assetId  String
   note     String?
 
+  @@unique([clientId, assetId], name: "client_asset_identifier")
   @@map("client_asset")
 }
 
@@ -152,6 +154,7 @@ model ScheduleEvent {
   eventId    String   @unique
   note       String?
 
+  @@unique([scheduleId, eventId], name: "schedule_event_identifier")
   @@map("schedule_event")
 }
 
