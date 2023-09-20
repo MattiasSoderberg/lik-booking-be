@@ -7,6 +7,7 @@ import { UserResponseDto } from './users/dto/response-user.dto';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api/v1');
 
   // app.useGlobalPipes(
   //   new ValidationPipe({
