@@ -23,69 +23,6 @@ import { ForbiddenResourceException } from 'src/auth/exceptions/forbidden-resour
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async createClient(createClientDto: CreateClientDto, ability: AppAbility) {
-    if (ability.can(Action.Manage, 'all')) {
-      throw new AdminRouteException();
-    }
-
-    const { assets, relatives, user, ...clientData } = createClientDto;
-
-    try {
-      const client = await this.prisma.client.create({
-        data: {
-          ...clientData,
-          relatives: {
-            connectOrCreate: relatives.map((relative) => {
-              return {
-                where: relative,
-                create: relative,
-              };
-            }),
-          },
-          assets: {
-            connectOrCreate: assets.map((asset) => {
-              return {
-                where: asset,
-                create: asset,
-              };
-            }),
-          },
-        },
-        include: { relatives: true, assets: true },
-      });
-      return client;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Something went wrong when creating client.',
-      );
-    }
-  }
-
-  findAllClients(ability: AppAbility) {
-    if (!ability.can(Action.Read, 'Client')) {
-      throw new ForbiddenResourceException();
-    }
-    return this.prisma.client.findMany({
-      include: {
-        relatives: { include: { user: true } },
-        assets: { include: { asset: true } },
-      },
-    });
-  }
-
-  findOneClient(uuid: string, ability: AppAbility) {
-    if (!ability.can(Action.Read, 'Client')) {
-      throw new ForbiddenResourceException();
-    }
-    try {
-      return this.prisma.client.findFirst({
-        where: { AND: [accessibleBy(ability).Client, { uuid }] },
-      });
-    } catch (error) {
-      throw new ForbiddenResourceException();
-    }
-  }
-
   async createUser(createUserDto: CreateUserDto, ability: AppAbility) {
     const { address, role, ...userdata } = createUserDto;
     const hashedPassword = await hash(userdata.password, 10);
@@ -134,17 +71,19 @@ export class UsersService {
     return user;
   }
 
-  findAllUsers(ability: AppAbility) {
+  async findAllUsers(ability: AppAbility) {
     try {
-      return this.prisma.user.findMany({ where: accessibleBy(ability).User });
+      return await this.prisma.user.findMany({
+        where: accessibleBy(ability).User,
+      });
     } catch (error) {
       throw new ForbiddenResourceException();
     }
   }
 
-  findOneUser(uuid: string, ability: AppAbility) {
+  async findOneUser(uuid: string, ability: AppAbility) {
     try {
-      return this.prisma.user.findFirst({
+      return await this.prisma.user.findFirst({
         where: {
           AND: [accessibleBy(ability).User, { uuid }],
         },
@@ -158,7 +97,7 @@ export class UsersService {
     return await this.prisma.user.findUnique({ where: { email: email } });
   }
 
-  updateUser(uuid: string, updateUserDto: UpdateUserDto) {
+  async updateUser(uuid: string, updateUserDto: UpdateUserDto) {
     const { address, role, ...userData } = updateUserDto;
 
     const dataToUpdate = {
@@ -176,11 +115,14 @@ export class UsersService {
       };
     }
 
-    return this.prisma.user.update({ where: { uuid }, data: dataToUpdate });
+    return await this.prisma.user.update({
+      where: { uuid },
+      data: dataToUpdate,
+    });
   }
 
-  removeUser(uuid: string) {
-    return `This action removes a #${uuid} user`;
+  async removeUser(uuid: string) {
+    return await `This action removes a #${uuid} user`;
   }
 
   async getUserWPermissions(uuid: string) {
