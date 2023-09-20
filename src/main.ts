@@ -8,14 +8,14 @@ import { UserResponseDto } from './users/dto/response-user.dto';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-  app.useGlobalInterceptors(new TransformDataInterceptor(UserResponseDto));
+  // app.useGlobalPipes(
+  //   new ValidationPipe({
+  //     whitelist: true,
+  //     forbidNonWhitelisted: true,
+  //     transform: true,
+  //   }),
+  // );
+  // app.useGlobalInterceptors(new TransformDataInterceptor(UserResponseDto));
 
   const config = new DocumentBuilder()
     .setTitle('LIK-booking')
