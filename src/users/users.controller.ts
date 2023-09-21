@@ -25,21 +25,6 @@ export class UsersController {
     private readonly clientsService: UsersClientsService,
   ) {}
 
-  @Post('clients')
-  createClient(
-    @Body() createClientDto: CreateClientDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    const { ability } = req;
-    return this.clientsService.create(createClientDto, ability);
-  }
-
-  @Get('clients')
-  findAllClients(@Request() req: AuthenticatedRequest) {
-    const { ability } = req;
-    return this.clientsService.findAll(ability);
-  }
-
   @Get('me')
   findMe(@Request() req: AuthenticatedRequest) {
     const { user } = req;
@@ -61,6 +46,40 @@ export class UsersController {
     return this.usersService.findAllUsers(ability);
   }
 
+  @Patch(':uuid')
+  updateUser(
+    @Param('uuid') uuid: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.usersService.updateUser(uuid, updateUserDto, ability);
+  }
+
+  @Delete(':uuid')
+  removeUser(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.usersService.removeUser(uuid, ability);
+  }
+
+  @Post('clients')
+  createClient(
+    @Body() createClientDto: CreateClientDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.clientsService.create(createClientDto, ability);
+  }
+
+  @Get('clients')
+  findAllClients(@Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.clientsService.findAll(ability);
+  }
+
   @Get('clients/:uuid')
   findOneClient(
     @Param('uuid') uuid: string,
@@ -78,6 +97,25 @@ export class UsersController {
   ) {
     const { ability } = req;
     return this.clientsService.update(uuid, updateClientDto, ability);
+  }
+
+  @Delete('clients/:uuid')
+  removeClient(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.clientsService.remove(uuid, ability);
+  }
+
+  @Get(':uuid')
+  findOneUser(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+
+    return this.usersService.findOneUser(uuid, ability);
   }
 
   @Patch('clients/:uuid/remove-asset')
@@ -106,37 +144,5 @@ export class UsersController {
       updateClientDto,
       ability,
     );
-  }
-
-  @Delete('clients/:uuid')
-  removeClient(
-    @Param('uuid') uuid: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    const { ability } = req;
-    return this.clientsService.remove(uuid, ability);
-  }
-
-  @Get(':uuid')
-  findOneUser(
-    @Param('uuid') uuid: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    const { ability } = req;
-
-    return this.usersService.findOneUser(uuid, ability);
-  }
-
-  @Patch(':uuid')
-  updateUser(
-    @Param('uuid') uuid: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    return this.usersService.updateUser(uuid, updateUserDto);
-  }
-
-  @Delete(':uuid')
-  removeUser(@Param('uuid') uuid: string) {
-    return this.usersService.removeUser(uuid);
   }
 }
