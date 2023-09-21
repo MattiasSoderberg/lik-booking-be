@@ -1,5 +1,4 @@
 import {
-  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -7,7 +6,6 @@ import {
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateClientDto } from './dto/create-client.dto';
 import { hash } from 'bcrypt';
 import { Prisma, User } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
@@ -24,13 +22,13 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async createUser(createUserDto: CreateUserDto, ability: AppAbility) {
+    if (!ability.can(Action.Create, 'User')) {
+      throw new AdminRouteException();
+    }
+
     const { address, role, ...userdata } = createUserDto;
     const hashedPassword = await hash(userdata.password, 10);
     userdata.password = hashedPassword;
-
-    if (!ability.can(Action.Manage, 'all')) {
-      throw new AdminRouteException();
-    }
 
     const dataToCreate = {
       ...userdata,
@@ -75,6 +73,7 @@ export class UsersService {
     try {
       return await this.prisma.user.findMany({
         where: accessibleBy(ability).User,
+        include: { client: true },
       });
     } catch (error) {
       throw new ForbiddenResourceException();
@@ -87,6 +86,7 @@ export class UsersService {
         where: {
           AND: [accessibleBy(ability).User, { uuid }],
         },
+        include: { client: { include: { assets: true } } },
       });
     } catch (error) {
       throw new ForbiddenResourceException();
@@ -94,16 +94,26 @@ export class UsersService {
   }
 
   async findOneUserByEmail(email: string) {
-    return await this.prisma.user.findUnique({ where: { email: email } });
+    return await this.prisma.user.findUnique({ where: { email } });
   }
 
-  async updateUser(uuid: string, updateUserDto: UpdateUserDto) {
+  async updateUser(
+    uuid: string,
+    updateUserDto: UpdateUserDto,
+    ability: AppAbility,
+  ) {
+    if (!ability.can(Action.Update, 'User')) {
+      throw new ForbiddenResourceException();
+    }
     const { address, role, ...userData } = updateUserDto;
 
     const dataToUpdate = {
       ...userData,
-      role: { connect: { id: RoleEnum[role] } },
     };
+
+    if (role) {
+      dataToUpdate['role'] = { connect: { id: RoleEnum[role] } };
+    }
 
     if (address) {
       dataToUpdate['address'] = {
@@ -121,7 +131,10 @@ export class UsersService {
     });
   }
 
-  async removeUser(uuid: string) {
+  async removeUser(uuid: string, ability: AppAbility) {
+    if (!ability.can(Action.Delete, 'User')) {
+      throw new AdminRouteException();
+    }
     return await `This action removes a #${uuid} user`;
   }
 
