@@ -6,18 +6,19 @@ import {
   IsDate,
   IsDateString,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
 
-class Asset {
+export class Asset {
   @IsUUID()
   assetId: string;
 }
 
-class Relative {
+export class Relative {
   @IsUUID()
   userId: string;
 }
@@ -39,7 +40,10 @@ export class CreateClientDto {
 
   @ApiProperty()
   @IsArray()
-  @ValidateNested({ each: true })
+  @IsObject({ each: true })
+  @ValidateNested({
+    message: ' must be an object with key "assetId" and value (string)',
+  })
   @Type(() => Asset)
   assets: Asset[];
 
@@ -50,7 +54,10 @@ export class CreateClientDto {
 
   @ApiProperty()
   @IsArray()
-  @ValidateNested({ each: true })
+  @IsObject({ each: true })
+  @ValidateNested({
+    message: ' must be an object with key "userId" and value (string)',
+  })
   @Type(() => Relative)
   relatives: Relative[];
 

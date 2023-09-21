@@ -1,5 +1,4 @@
 import {
-  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -7,91 +6,29 @@ import {
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateClientDto } from './dto/create-client.dto';
 import { hash } from 'bcrypt';
 import { Prisma, User } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
-import { UserExists } from './exceptions/user-exists.exception';
+import { UserExistsException } from './exceptions/user-exists.exception';
 import { RoleEnum } from 'src/utils/role.enum';
 import { AppAbility } from 'src/auth/auth.ability';
 import { accessibleBy } from '@casl/prisma';
 import { Action } from 'src/utils/action.enum';
+import { AdminRouteException } from 'src/auth/exceptions/admin-route.exception';
+import { ForbiddenResourceException } from 'src/auth/exceptions/forbidden-resource.exception';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async createClient(createClientDto: CreateClientDto, ability: AppAbility) {
-    if (ability.can(Action.Manage, 'all')) {
-      throw new ForbiddenException('Admin route');
-    }
-
-    const { assets, relatives, user, ...clientData } = createClientDto;
-
-    try {
-      const client = await this.prisma.client.create({
-        data: {
-          ...clientData,
-          relatives: {
-            connectOrCreate: relatives.map((relative) => {
-              return {
-                where: relative,
-                create: relative,
-              };
-            }),
-          },
-          assets: {
-            connectOrCreate: assets.map((asset) => {
-              return {
-                where: asset,
-                create: asset,
-              };
-            }),
-          },
-        },
-        include: { relatives: true, assets: true },
-      });
-      return client;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Something went wrong when creating clielnt.',
-      );
-    }
-  }
-
-  findAllClients(ability: AppAbility) {
-    if (!ability.can(Action.Read, 'Client')) {
-      throw new ForbiddenException('No permissions for route.');
-    }
-    return this.prisma.client.findMany({
-      include: {
-        relatives: { include: { user: true } },
-        assets: { include: { asset: true } },
-      },
-    });
-  }
-
-  findOneClient(uuid: string, ability: AppAbility) {
-    if (!ability.can(Action.Read, 'Client')) {
-      throw new ForbiddenException('No permissions for route.');
-    }
-    try {
-      return this.prisma.client.findFirst({
-        where: { AND: [accessibleBy(ability).Client, { uuid }] },
-      });
-    } catch (error) {
-      throw new ForbiddenException('Forbidden resource.');
-    }
-  }
-
   async createUser(createUserDto: CreateUserDto, ability: AppAbility) {
+    if (!ability.can(Action.Create, 'User')) {
+      throw new AdminRouteException();
+    }
+
     const { address, role, ...userdata } = createUserDto;
     const hashedPassword = await hash(userdata.password, 10);
     userdata.password = hashedPassword;
-
-    if (!ability.can(Action.Manage, 'all')) {
-      throw new ForbiddenException('Admin route');
-    }
 
     const dataToCreate = {
       ...userdata,
@@ -120,7 +57,7 @@ export class UsersService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error?.code === PrismaErrors.UniqueConstraintError
       ) {
-        throw new UserExists(createUserDto.email);
+        throw new UserExistsException(createUserDto.email);
       }
       throw new InternalServerErrorException(
         'Something went wrong when creating user.',
@@ -132,37 +69,51 @@ export class UsersService {
     return user;
   }
 
-  findAllUsers(ability: AppAbility) {
+  async findAllUsers(ability: AppAbility) {
     try {
-      return this.prisma.user.findMany({ where: accessibleBy(ability).User });
+      return await this.prisma.user.findMany({
+        where: accessibleBy(ability).User,
+        include: { client: true },
+      });
     } catch (error) {
-      throw new ForbiddenException('No permissions for route.');
+      throw new ForbiddenResourceException();
     }
   }
 
-  findOneUser(uuid: string, ability: AppAbility) {
+  async findOneUser(uuid: string, ability: AppAbility) {
     try {
-      return this.prisma.user.findFirst({
+      return await this.prisma.user.findFirst({
         where: {
           AND: [accessibleBy(ability).User, { uuid }],
         },
+        include: { client: { include: { assets: true } } },
       });
     } catch (error) {
-      throw new ForbiddenException('Forbidden resource.');
+      throw new ForbiddenResourceException();
     }
   }
 
   async findOneUserByEmail(email: string) {
-    return await this.prisma.user.findUnique({ where: { email: email } });
+    return await this.prisma.user.findUnique({ where: { email } });
   }
 
-  updateUser(uuid: string, updateUserDto: UpdateUserDto) {
+  async updateUser(
+    uuid: string,
+    updateUserDto: UpdateUserDto,
+    ability: AppAbility,
+  ) {
+    if (!ability.can(Action.Update, 'User')) {
+      throw new ForbiddenResourceException();
+    }
     const { address, role, ...userData } = updateUserDto;
 
     const dataToUpdate = {
       ...userData,
-      role: { connect: { id: RoleEnum[role] } },
     };
+
+    if (role) {
+      dataToUpdate['role'] = { connect: { id: RoleEnum[role] } };
+    }
 
     if (address) {
       dataToUpdate['address'] = {
@@ -174,11 +125,17 @@ export class UsersService {
       };
     }
 
-    return this.prisma.user.update({ where: { uuid }, data: dataToUpdate });
+    return await this.prisma.user.update({
+      where: { uuid },
+      data: dataToUpdate,
+    });
   }
 
-  removeUser(uuid: string) {
-    return `This action removes a #${uuid} user`;
+  async removeUser(uuid: string, ability: AppAbility) {
+    if (!ability.can(Action.Delete, 'User')) {
+      throw new AdminRouteException();
+    }
+    return await `This action removes a #${uuid} user`;
   }
 
   async getUserWPermissions(uuid: string) {
