@@ -59,7 +59,7 @@ export const permissions = [
     roleId: 3,
     action: 'read',
     subject: 'Client',
-    conditions: { relatives: { some: '${uuid}' } },
+    conditions: { relatives: { some: { userId: '${uuid}' } } },
   },
   {
     id: 7,

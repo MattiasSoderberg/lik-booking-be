@@ -52,9 +52,9 @@ export class AuthAbility {
 
   private parseCondition(condition, uuid) {
     const conditionToString = JSON.stringify(condition);
-    return JSON.parse(conditionToString, (key, value) => {
+    return JSON.parse(conditionToString, (_key, value) => {
       if (typeof value === 'string' && value[0] === '$') {
-        return key === 'uuid' ? uuid : { uuid };
+        return uuid;
       }
       return { ...value };
     });
