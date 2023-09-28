@@ -124,9 +124,11 @@ model Semester {
   uuid      String         @id @default(uuid())
   startAt   DateTime       @db.Date
   endAt     DateTime       @db.Date
+  year      Int
   period    SemesterPeriod
   schedules Schedule[]
 
+  @@unique([year, period])
   @@map("semesters")
 }
 
