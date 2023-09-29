@@ -18,26 +18,6 @@ import { accessibleBy } from '@casl/prisma';
 export class SchedulesService {
   constructor(private prisma: PrismaService) {}
 
-  create(createScheduleDto: CreateScheduleDto) {
-    return 'This action adds a new schedule';
-  }
-
-  findAll() {
-    return `This action returns all schedules`;
-  }
-
-  findOne(uuid: string) {
-    return `This action returns a #${uuid} schedule`;
-  }
-
-  update(uuid: string, updateScheduleDto: UpdateScheduleDto) {
-    return `This action updates a #${uuid} schedule`;
-  }
-
-  remove(uuid: string) {
-    return `This action removes a #${uuid} schedule`;
-  }
-
   async createSemester(
     createSemesterDto: CreateSemesterDto,
     ability: AppAbility,
@@ -69,9 +49,13 @@ export class SchedulesService {
   }
 
   async findAllSemesters(ability: AppAbility) {
-    return await this.prisma.semester.findMany({
-      where: accessibleBy(ability).Semester,
-    });
+    try {
+      return await this.prisma.semester.findMany({
+        where: accessibleBy(ability).Semester,
+      });
+    } catch (error) {
+      throw new AdminRouteException();
+    }
   }
 
   async removeSemester(uuid: string, ability: AppAbility) {
@@ -79,5 +63,25 @@ export class SchedulesService {
       throw new AdminRouteException();
     }
     return await this.prisma.semester.delete({ where: { uuid } });
+  }
+
+  create(createScheduleDto: CreateScheduleDto) {
+    return 'This action adds a new schedule';
+  }
+
+  findAll() {
+    return `This action returns all schedules`;
+  }
+
+  findOne(uuid: string) {
+    return `This action returns a #${uuid} schedule`;
+  }
+
+  update(uuid: string, updateScheduleDto: UpdateScheduleDto) {
+    return `This action updates a #${uuid} schedule`;
+  }
+
+  remove(uuid: string) {
+    return `This action removes a #${uuid} schedule`;
   }
 }
