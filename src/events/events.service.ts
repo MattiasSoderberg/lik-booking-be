@@ -56,23 +56,21 @@ export class EventsService {
         },
       };
       if (asset) {
-        console.log('ASSET', asset);
-        const { assetId } = asset;
+        const { uuid } = asset;
         dataToCreate['asset'] = {
-          connect: { uuid: assetId },
+          connect: { uuid },
         };
       }
       if (staff) {
-        console.log('STAFF', staff);
-        const { staffId } = staff;
+        const { uuid } = staff;
         dataToCreate['staff'] = {
-          connect: { uuid: staffId },
+          connect: { uuid },
         };
       }
       if (client) {
-        const { clientId } = client;
+        const { uuid } = client;
         dataToCreate['client'] = {
-          connect: { uuid: clientId },
+          connect: { uuid },
         };
       }
       return await this.prisma.event.create({ data: dataToCreate });
@@ -91,8 +89,14 @@ export class EventsService {
     }
   }
 
-  findOne(uuid: string) {
-    return `This action returns a #${uuid} event`;
+  async findOne(uuid: string, ability: AppAbility) {
+    try {
+      return await this.prisma.event.findFirst({
+        where: { AND: [accessibleBy(ability).Event, { uuid }] },
+      });
+    } catch (error) {
+      throw new ForbiddenException();
+    }
   }
 
   update(uuid: string, updateEventDto: UpdateEventDto) {
