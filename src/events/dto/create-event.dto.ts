@@ -3,12 +3,14 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
+  ValidateNested,
 } from 'class-validator';
 
-export class RelationEntity {
+class RelationEntity {
   @IsUUID()
   uuid: string;
 }
@@ -32,23 +34,38 @@ export class CreateEventDto {
   @IsOptional()
   isActive: boolean;
 
-  @ApiProperty()
+  @ApiProperty({
+    description:
+      'Blocking events are for blocking date span for other events. Eg. Closed for holiday.',
+  })
   @IsBoolean()
   @IsOptional()
   isBlocking: boolean;
 
   @ApiProperty()
   @IsOptional()
+  @IsObject({ each: true })
+  @ValidateNested({
+    message: ' must be an object with key "uuid" and value (string)',
+  })
   @Type(() => RelationEntity)
-  assetId: RelationEntity;
+  asset: RelationEntity;
 
   @ApiProperty()
   @IsOptional()
+  @IsObject({ each: true })
+  @ValidateNested({
+    message: ' must be an object with key "uuid" and value (string)',
+  })
   @Type(() => RelationEntity)
-  staffId: RelationEntity;
+  staff: RelationEntity;
 
   @ApiProperty()
   @IsOptional()
+  @IsObject({ each: true })
+  @ValidateNested({
+    message: ' must be an object with key "uuid" and value (string)',
+  })
   @Type(() => RelationEntity)
-  clientId: RelationEntity;
+  client: RelationEntity;
 }
