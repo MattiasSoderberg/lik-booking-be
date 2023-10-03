@@ -21,7 +21,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('LIK-booking')
     .setDescription('A booking system for LIK')
-    .setVersion('0.1')
+    .setVersion('1.0')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
