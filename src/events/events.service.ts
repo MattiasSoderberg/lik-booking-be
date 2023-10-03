@@ -11,6 +11,7 @@ import { CreateEventGroupDto } from './dto/create-eventGroup.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { AppAbility } from 'src/auth/auth.ability';
 import { Action } from 'src/utils/action.enum';
+import { accessibleBy } from '@casl/prisma';
 
 @Injectable()
 export class EventsService {
@@ -80,8 +81,14 @@ export class EventsService {
     }
   }
 
-  findAll() {
-    return `This action returns all events`;
+  async findAll(ability: AppAbility) {
+    try {
+      return await this.prisma.event.findMany({
+        where: accessibleBy(ability).Event,
+      });
+    } catch (error) {
+      throw new ForbiddenException();
+    }
   }
 
   findOne(uuid: string) {
