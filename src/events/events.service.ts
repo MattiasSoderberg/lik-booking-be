@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { CreateEventGroupDto } from './dto/create-eventGroup.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
+import { AppAbility } from 'src/auth/auth.ability';
+import { Action } from 'src/utils/action.enum';
 
 @Injectable()
 export class EventsService {
@@ -34,7 +36,11 @@ export class EventsService {
     return this.prisma.asset.update({ where: { uuid }, data: updateAssetDto });
   }
 
-  create(createEventDto: CreateEventDto) {
+  create(createEventDto: CreateEventDto, ability: AppAbility) {
+    if (!ability.can(Action.Create, 'Event')) {
+      throw new ForbiddenException();
+    }
+
     return 'This action adds a new event';
   }
 
