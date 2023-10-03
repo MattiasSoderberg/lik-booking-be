@@ -37,8 +37,9 @@ export class EventsController {
   }
 
   @Get()
-  findAll() {
-    return this.eventsService.findAll();
+  findAll(@Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.eventsService.findAll(ability);
   }
 
   @Post('assets')
