@@ -160,18 +160,14 @@ model ScheduleEvent {
   @@map("schedule_event")
 }
 
-enum EventType {
-  ACTIVE
-  BLOCKING
-}
-
 model Event {
   uuid            String         @id @default(uuid())
-  asset           Asset          @relation(fields: [assetId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  assetId         String
-  user            User           @relation(fields: [uuid], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  client          Client         @relation(fields: [clientId], references: [uuid])
-  clientId        String
+  asset           Asset?         @relation(fields: [assetId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  assetId         String?
+  staff           User?          @relation(fields: [staffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  staffId         String?
+  client          Client?        @relation(fields: [clientId], references: [uuid])
+  clientId        String?
   startAt         DateTime
   endAt           DateTime
   note            String?
@@ -181,9 +177,11 @@ model Event {
   updatedBy       User?          @relation("updatedBookings", fields: [updatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   creatingStaffId String
   updatingStaffId String?
+  isActive        Boolean        @default(true)
+  isBlocking      Boolean        @default(false)
   shedule         ScheduleEvent?
-  eventGroup      EventGroup?    @relation(fields: [eventGroupId], references: [id])
-  eventGroupId    Int
+  // eventGroup      EventGroup?    @relation(fields: [eventGroupId], references: [id])
+  // eventGroupId    Int
 
   @@map("events")
 }
@@ -192,7 +190,7 @@ model EventGroup {
   id      Int      @id @default(autoincrement())
   startAt DateTime @db.Time()
   endAt   DateTime @db.Time()
-  events  Event[]
+  // events  Event[]
 
   @@map("event_groups")
 }
