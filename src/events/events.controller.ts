@@ -17,6 +17,7 @@ import { CreateEventGroupDto } from './dto/create-eventGroup.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { EventsAssetsService } from './events-assets.service';
 import { AuthenticatedRequest } from 'src/auth/auth.interface';
+import { DateBlockedValidationPipe } from './pipes/date-blocked-validation.pipe';
 
 @ApiTags('Events')
 @Controller('events')
@@ -28,11 +29,11 @@ export class EventsController {
 
   @Post()
   create(
-    @Body() createEventDto: CreateEventDto,
+    @Body(DateBlockedValidationPipe) createEventDto: CreateEventDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const { ability } = req;
-    return this.eventsService.create(createEventDto, ability);
+    const { ability, user } = req;
+    return this.eventsService.create(createEventDto, ability, user);
   }
 
   @Get()
@@ -76,8 +77,9 @@ export class EventsController {
   }
 
   @Delete(':uuid')
-  remove(@Param('uuid') uuid: string) {
-    return this.eventsService.remove(uuid);
+  remove(@Param('uuid') uuid: string, @Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.eventsService.remove(uuid, ability);
   }
 
   @Get('assets/:uuid')
