@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -36,12 +40,44 @@ export class EventsService {
     return this.prisma.asset.update({ where: { uuid }, data: updateAssetDto });
   }
 
-  create(createEventDto: CreateEventDto, ability: AppAbility) {
+  async create(createEventDto: CreateEventDto, ability: AppAbility, user) {
+    // TODO fix user type
     if (!ability.can(Action.Create, 'Event')) {
       throw new ForbiddenException();
     }
 
-    return 'This action adds a new event';
+    try {
+      const { asset, staff, client, ...eventData } = createEventDto;
+      const dataToCreate = {
+        ...eventData,
+        createdBy: {
+          connect: { uuid: user.uuid },
+        },
+      };
+      if (asset) {
+        console.log('ASSET', asset);
+        const { assetId } = asset;
+        dataToCreate['asset'] = {
+          connect: { uuid: assetId },
+        };
+      }
+      if (staff) {
+        console.log('STAFF', staff);
+        const { staffId } = staff;
+        dataToCreate['staff'] = {
+          connect: { uuid: staffId },
+        };
+      }
+      if (client) {
+        const { clientId } = client;
+        dataToCreate['client'] = {
+          connect: { uuid: clientId },
+        };
+      }
+      return await this.prisma.event.create({ data: dataToCreate });
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
   }
 
   findAll() {
@@ -56,7 +92,10 @@ export class EventsService {
     return `This action updates a #${uuid} event`;
   }
 
-  remove(uuid: string) {
-    return `This action removes a #${uuid} event`;
+  async remove(uuid: string, ability: AppAbility) {
+    if (!ability.can(Action.Delete, 'Event')) {
+      throw new ForbiddenException();
+    }
+    return await this.prisma.event.delete({ where: { uuid } });
   }
 }
