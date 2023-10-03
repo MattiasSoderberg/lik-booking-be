@@ -27,8 +27,12 @@ export class EventsController {
   ) {}
 
   @Post()
-  create(@Body() createEventDto: CreateEventDto) {
-    return this.eventsService.create(createEventDto);
+  create(
+    @Body() createEventDto: CreateEventDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.eventsService.create(createEventDto, ability);
   }
 
   @Get()
