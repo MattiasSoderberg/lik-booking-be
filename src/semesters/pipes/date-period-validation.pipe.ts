@@ -27,10 +27,10 @@ export class DatePeriodValidationPipe implements PipeTransform {
     }
 
     if (
-      startAt <= allowedPeriodStartAt ||
-      startAt >= allowedPeriodEndAt ||
-      endAt <= allowedPeriodStartAt ||
-      endAt >= allowedPeriodEndAt
+      startAt < allowedPeriodStartAt ||
+      startAt > allowedPeriodEndAt ||
+      endAt < allowedPeriodStartAt ||
+      endAt > allowedPeriodEndAt
     ) {
       throw new BadRequestException(
         `Semester must be in the ${
