@@ -50,8 +50,9 @@ export class SemestersController {
     return this.semestersService.update(+id, updateSemesterDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.semestersService.remove(+id);
+  @Delete(':uuid')
+  remove(@Param('uuid') uuid: string, @Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.semestersService.remove(uuid, ability);
   }
 }

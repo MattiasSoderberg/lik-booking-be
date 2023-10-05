@@ -58,7 +58,10 @@ export class SemestersService {
     return `This action updates a #${id} semester`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} semester`;
+  async remove(uuid: string, ability: AppAbility) {
+    if (!ability.can(Action.Delete, 'Semester')) {
+      throw new AdminRouteException();
+    }
+    return await this.prisma.semester.delete({ where: { uuid } });
   }
 }
