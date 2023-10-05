@@ -19,30 +19,6 @@ import { PrismaErrors } from 'src/utils/prisma-errors.enum';
 export class EventsService {
   constructor(private prisma: PrismaService) {}
 
-  // createEventGroup(createEventGroupDto: CreateEventGroupDto) {
-  //   return 'Creating event group';
-  // }
-
-  // findAllEventGroups() {
-  //   return this.prisma.eventGroup.findMany({});
-  // }
-
-  // createAsset(createAssetDto: CreateAssetDto) {
-  //   return this.prisma.asset.create({ data: createAssetDto });
-  // }
-
-  // findAllAssets() {
-  //   return this.prisma.asset.findMany({});
-  // }
-
-  // findOneAsset(uuid: string) {
-  //   return this.prisma.asset.findUniqueOrThrow({ where: { uuid } });
-  // }
-
-  // updateAsset(uuid: string, updateAssetDto: UpdateAssetDto) {
-  //   return this.prisma.asset.update({ where: { uuid }, data: updateAssetDto });
-  // }
-
   async create(createEventDto: CreateEventDto, ability: AppAbility, user) {
     // TODO fix user type
     if (!ability.can(Action.Create, 'Event')) {
