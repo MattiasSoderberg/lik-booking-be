@@ -46,6 +46,7 @@ model User {
   createdEvents   Event[]          @relation("createdBookings")
   updatedEvents   Event[]          @relation("updatedBookings")
   events          Event[]
+  schedule        Schedule?
 
   @@map("users")
 }
@@ -121,76 +122,85 @@ enum SemesterPeriod {
 }
 
 model Semester {
-  uuid      String         @id @default(uuid())
-  startAt   DateTime       @db.Date
-  endAt     DateTime       @db.Date
-  year      Int
-  period    SemesterPeriod
-  schedules Schedule[]
+  uuid        String         @id @default(uuid())
+  startAt     DateTime       @db.Date
+  endAt       DateTime       @db.Date
+  year        Int
+  period      SemesterPeriod
+  schedules   Schedule[]
+  eventGroups EventGroup[]
 
-  @@unique([year, period])
+  @@unique([year, period], name: "semester_identifier")
   @@map("semesters")
 }
 
 enum SemesterPlan {
   FULL
   HALF
+  STAFF
 }
 
 model Schedule {
-  uuid         String          @id @default(uuid())
-  client       Client          @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  clientId     String
+  uuid         String       @id @default(uuid())
+  client       Client?      @relation(fields: [clientId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  clientId     String?
+  staff        User?        @relation(fields: [staffId], references: [uuid])
+  staffId      String?      @unique
   semesterPlan SemesterPlan
-  events       ScheduleEvent[]
-  semester     Semester        @relation(fields: [semesterId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  events       Event[]
+  semester     Semester     @relation(fields: [semesterId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   semesterId   String
 
   @@map("schedules")
 }
 
-model ScheduleEvent {
-  schedule   Schedule @relation(fields: [scheduleId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  scheduleId String   @unique
-  event      Event    @relation(fields: [eventId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  eventId    String   @unique
-  note       String?
+// model ScheduleEvent {
+//   schedule   Schedule @relation(fields: [scheduleId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+//   scheduleId String   @unique
+//   event      Event    @relation(fields: [eventId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+//   eventId    String   @unique
+//   note       String?
 
-  @@unique([scheduleId, eventId], name: "schedule_event_identifier")
-  @@map("schedule_event")
-}
+//   @@unique([scheduleId, eventId], name: "schedule_event_identifier")
+//   @@map("schedule_event")
+// }
 
 model Event {
-  uuid            String         @id @default(uuid())
-  asset           Asset?         @relation(fields: [assetId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  assetId         String?
-  staff           User?          @relation(fields: [staffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  staffId         String?
-  client          Client?        @relation(fields: [clientId], references: [uuid])
-  clientId        String?
-  startAt         DateTime
-  endAt           DateTime
-  note            String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  createdBy       User           @relation("createdBookings", fields: [creatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  updatedBy       User?          @relation("updatedBookings", fields: [updatingStaffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
-  creatingStaffId String
-  updatingStaffId String?
-  isActive        Boolean        @default(true)
-  isBlocking      Boolean        @default(false)
-  shedule         ScheduleEvent?
-  // eventGroup      EventGroup?    @relation(fields: [eventGroupId], references: [id])
-  // eventGroupId    Int
+  uuid         String      @id @default(uuid())
+  asset        Asset?      @relation(fields: [assetId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  assetId      String?
+  staff        User?       @relation(fields: [staffId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  staffId      String?
+  client       Client?     @relation(fields: [clientId], references: [uuid])
+  clientId     String?
+  startAt      DateTime    @db.Timestamptz()
+  endAt        DateTime    @db.Timestamptz()
+  note         String?
+  createdAt    DateTime    @default(now()) @db.Timestamptz()
+  updatedAt    DateTime    @updatedAt @db.Timestamptz()
+  createdBy    User        @relation("createdBookings", fields: [createdById], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  updatedBy    User?       @relation("updatedBookings", fields: [updatedById], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  createdById  String
+  updatedById  String?
+  isActive     Boolean     @default(true)
+  isBlocking   Boolean     @default(false)
+  shedule      Schedule?   @relation(fields: [scheduleId], references: [uuid])
+  scheduleId   String?
+  eventGroup   EventGroup? @relation(fields: [eventGroupId], references: [uuid])
+  eventGroupId String?
 
   @@map("events")
 }
 
 model EventGroup {
-  id      Int      @id @default(autoincrement())
-  startAt DateTime @db.Time()
-  endAt   DateTime @db.Time()
-  // events  Event[]
+  uuid       String   @id @default(uuid())
+  startAt    String
+  endAt      String
+  weekday    Int      @db.SmallInt()
+  semester   Semester @relation(fields: [semesterId], references: [uuid])
+  semesterId String
+  events     Event[]
 
+  @@unique([startAt, weekday, semesterId])
   @@map("event_groups")
 }
