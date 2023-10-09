@@ -27,12 +27,12 @@ export class CreateEventDto {
   @ApiProperty()
   @IsOptional()
   @IsString()
-  note: string;
+  note?: string;
 
   @ApiProperty()
   @IsBoolean()
   @IsOptional()
-  isActive: boolean;
+  isActive?: boolean;
 
   @ApiProperty({
     description:
@@ -40,7 +40,7 @@ export class CreateEventDto {
   })
   @IsBoolean()
   @IsOptional()
-  isBlocking: boolean;
+  isBlocking?: boolean;
 
   @ApiProperty()
   @IsOptional()
@@ -49,7 +49,7 @@ export class CreateEventDto {
     message: ' must be an object with key "uuid" and value (string)',
   })
   @Type(() => RelationEntity)
-  asset: RelationEntity;
+  asset?: RelationEntity;
 
   @ApiProperty()
   @IsOptional()
@@ -58,7 +58,7 @@ export class CreateEventDto {
     message: ' must be an object with key "uuid" and value (string)',
   })
   @Type(() => RelationEntity)
-  staff: RelationEntity;
+  staff?: RelationEntity;
 
   @ApiProperty()
   @IsOptional()
@@ -67,5 +67,5 @@ export class CreateEventDto {
     message: ' must be an object with key "uuid" and value (string)',
   })
   @Type(() => RelationEntity)
-  client: RelationEntity;
+  client?: RelationEntity;
 }
