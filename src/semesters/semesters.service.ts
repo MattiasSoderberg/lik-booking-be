@@ -12,21 +12,44 @@ import { Prisma } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { accessibleBy } from '@casl/prisma';
+import { HolidayWeeks } from 'src/utils/constants.enum';
+import { EventsService } from 'src/events/events.service';
 
 @Injectable()
 export class SemestersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventsService: EventsService,
+  ) {}
 
-  async create(createSemesterDto: CreateSemesterDto, ability: AppAbility) {
+  async create(
+    createSemesterDto: CreateSemesterDto,
+    ability: AppAbility,
+    user,
+  ) {
     if (!ability.can(Action.Create, 'Semester')) {
       throw new AdminRouteException();
     }
 
     try {
       const year = new Date(createSemesterDto.startAt).getFullYear();
-      return await this.prisma.semester.create({
+      const holiday = HolidayWeeks[createSemesterDto.period];
+      const holidayDates = this.weekToDates(year, holiday);
+      const eventToCreate = {
+        ...holidayDates,
+        isBlocking: true,
+        note: `${createSemesterDto.period} holiday`,
+      };
+
+      const semester = await this.prisma.semester.create({
         data: { ...createSemesterDto, year },
       });
+
+      if (semester) {
+        await this.eventsService.create(eventToCreate, ability, user);
+      }
+
+      return semester;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -63,5 +86,24 @@ export class SemestersService {
       throw new AdminRouteException();
     }
     return await this.prisma.semester.delete({ where: { uuid } });
+  }
+
+  private weekToDates(year: number, week: number) {
+    const yearStartAt = new Date(`${year}-01-01`);
+    const daysToFirstMonday =
+      yearStartAt.getDay() < 1
+        ? 1
+        : yearStartAt.getDay() > 1
+        ? 7 - yearStartAt.getDay() + 1
+        : 0;
+    yearStartAt.setDate(yearStartAt.getDate() + daysToFirstMonday);
+    const daysToWeek = week * 7 - 7;
+    const startAt = new Date(yearStartAt);
+    startAt.setDate(startAt.getDate() + daysToWeek);
+    const endAt = new Date(startAt);
+    endAt.setDate(endAt.getDate() + 6);
+    endAt.setUTCHours(23, 59, 59, 999);
+
+    return { startAt, endAt };
   }
 }
