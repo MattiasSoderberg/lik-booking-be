@@ -27,8 +27,8 @@ export class SemestersController {
     createSemesterDto: CreateSemesterDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const { ability } = req;
-    return this.semestersService.create(createSemesterDto, ability);
+    const { ability, user } = req;
+    return this.semestersService.create(createSemesterDto, ability, user);
   }
 
   @Get()
