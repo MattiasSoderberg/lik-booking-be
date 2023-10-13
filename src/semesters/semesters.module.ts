@@ -4,11 +4,11 @@ import { SemestersController } from './semesters.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { EventsModule } from 'src/events/events.module';
 import { SchedulesService } from './schedules.service';
-import { ScheduleShiftService } from './schedule-shift.service';
+import { ScheduleShiftsService } from './schedule-shifts.service';
 
 @Module({
   controllers: [SemestersController],
-  providers: [SemestersService, SchedulesService, ScheduleShiftService],
+  providers: [SemestersService, SchedulesService, ScheduleShiftsService],
   imports: [PrismaModule, EventsModule],
 })
 export class SemestersModule {}

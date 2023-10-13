@@ -18,6 +18,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { SchedulesService } from './schedules.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { ScheduleValidationPipe } from './pipes/schedule-validation.pipe';
+import { CreateScheduleShiftDto } from './dto/create-schedule-shift.dto';
+import { ScheduleShiftsService } from './schedule-shifts.service';
 
 @ApiTags('Semesters')
 @Controller('semesters')
@@ -25,6 +27,7 @@ export class SemestersController {
   constructor(
     private readonly semestersService: SemestersService,
     private readonly schedulesService: SchedulesService,
+    private readonly scheduleShiftsService: ScheduleShiftsService,
   ) {}
 
   @Post()
@@ -70,6 +73,16 @@ export class SemestersController {
   ) {
     const { ability } = req;
     return this.schedulesService.remove(uuid, ability);
+  }
+
+  @Post('schedules/:uuid/schedule-shift')
+  createScheduleShift(
+    @Param('uuid') uuid: string,
+    @Body() createScheduleShiftDto: CreateScheduleShiftDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability, user } = req;
+    return;
   }
 
   @Post(':semesterUuid/schedules')
