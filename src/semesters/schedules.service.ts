@@ -41,11 +41,25 @@ export class SchedulesService {
       semester: { connect: { uuid: semesterUuid } },
     };
 
-    // if (staff) {
-    //   dataToCreate['staff'] = {
-    //     connect: { ...staff },
-    //   };
-    // }
+    if (staff) {
+      dataToCreate['staff'] = {
+        connect: { ...staff },
+      };
+
+      try {
+        return await this.prisma.schedule.create({ data: dataToCreate });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error?.code === PrismaErrors.UniqueConstraintError
+        ) {
+          throw new BadRequestException('Staff schedule already exists.');
+        }
+        throw new InternalServerErrorException(
+          'Something went wrong when creating schedule.',
+        );
+      }
+    }
 
     if (client) {
       dataToCreate['client'] = {
