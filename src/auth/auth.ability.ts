@@ -1,6 +1,13 @@
 import { AbilityBuilder, PureAbility } from '@casl/ability';
 import { PrismaQuery, Subjects, createPrismaAbility } from '@casl/prisma';
-import { Client, Event, EventGroup, Semester, User } from '@prisma/client';
+import {
+  Client,
+  Event,
+  EventGroup,
+  Schedule,
+  Semester,
+  User,
+} from '@prisma/client';
 
 export type AppSubjects = Subjects<{
   User: User;
@@ -8,6 +15,7 @@ export type AppSubjects = Subjects<{
   Event: Event;
   EventGroup: EventGroup;
   Semester: Semester;
+  Schedule: Schedule;
 }>;
 
 export type AppAbility = PureAbility<
