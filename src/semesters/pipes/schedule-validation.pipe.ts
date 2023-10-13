@@ -21,6 +21,10 @@ export class ScheduleValidationPipe implements PipeTransform {
       );
     }
 
+    if (body.staff && body.semesterPlan !== 'STAFF') {
+      throw new BadRequestException('Staff semester plan must be STAFF.');
+    }
+
     return body;
   }
 }
