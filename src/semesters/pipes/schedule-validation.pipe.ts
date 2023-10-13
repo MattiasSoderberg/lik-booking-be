@@ -9,7 +9,7 @@ import { CreateScheduleDto } from '../dto/create-schedule.dto';
 @Injectable()
 export class ScheduleValidationPipe implements PipeTransform {
   transform(body: CreateScheduleDto, metadata: ArgumentMetadata) {
-    if (body.staff && body.client) {
+    if ((body.staff && body.client) || (!body.staff && !body.client)) {
       throw new BadRequestException(
         'Schedule can only be created for staff OR client.',
       );
