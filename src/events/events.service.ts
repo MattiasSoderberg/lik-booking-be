@@ -12,8 +12,9 @@ import { UpdateAssetDto } from './dto/update-asset.dto';
 import { AppAbility } from 'src/auth/auth.ability';
 import { Action } from 'src/utils/action.enum';
 import { accessibleBy } from '@casl/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma, Semester } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
+import { AdminRouteException } from 'src/auth/exceptions/admin-route.exception';
 
 @Injectable()
 export class EventsService {
@@ -92,5 +93,61 @@ export class EventsService {
       throw new ForbiddenException();
     }
     return await this.prisma.event.delete({ where: { uuid } });
+  }
+
+  async checkDateAvailability(
+    event: CreateEventDto,
+    semester: Semester,
+  ): Promise<Boolean> {
+    const blockingEvent = await this.prisma.event.findFirst({
+      where: {
+        startAt: {
+          gte: semester.startAt,
+        },
+        endAt: {
+          lte: semester.endAt,
+        },
+        AND: [
+          {
+            OR: [
+              { isBlocking: true },
+              { assetId: event?.asset?.uuid },
+              { staffId: event?.staff?.uuid },
+            ],
+          },
+          {
+            OR: [
+              {
+                startAt: {
+                  lte: event.startAt,
+                },
+                endAt: {
+                  gte: event.endAt,
+                },
+              },
+              {
+                startAt: {
+                  lte: event.startAt,
+                },
+                endAt: {
+                  lte: event.endAt,
+                  gte: event.startAt,
+                },
+              },
+              {
+                startAt: {
+                  gte: event.startAt,
+                  lte: event.endAt,
+                },
+                endAt: {
+                  gte: event.endAt,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    return !blockingEvent;
   }
 }
