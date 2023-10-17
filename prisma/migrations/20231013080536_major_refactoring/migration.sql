@@ -186,9 +186,6 @@ ALTER TABLE "schedule_shifts" ADD CONSTRAINT "schedule_shifts_createdById_fkey" 
 ALTER TABLE "schedule_shifts" ADD CONSTRAINT "schedule_shifts_updatedById_fkey" FOREIGN KEY ("updatedById") REFERENCES "users"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "schedule_shifts" ADD CONSTRAINT "schedule_shifts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "schedule_shifts" ADD CONSTRAINT "schedule_shifts_scheduleId_fkey" FOREIGN KEY ("scheduleId") REFERENCES "schedules"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey

@@ -49,7 +49,7 @@ model User {
   updatedScheduleShift ScheduleShift[]  @relation("updatedScheduleShifts")
   events               Event[]
   schedule             Schedule[]
-  scheduleShifts       ScheduleShift[]
+  // scheduleShifts       ScheduleShift[]
 
   @@map("users")
 }
@@ -174,7 +174,7 @@ model ScheduleShift {
   updatedBy      User?               @relation("updatedScheduleShifts", fields: [updatedById], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   createdById    String
   updatedById    String?
-  user           User                @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
+  // user           User                @relation(fields: [userId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   userId         String
   schedule       Schedule            @relation(fields: [scheduleId], references: [uuid], onDelete: Cascade, onUpdate: Cascade)
   scheduleId     String
