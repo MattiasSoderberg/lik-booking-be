@@ -73,6 +73,7 @@ export class SemestersController {
 /***
  * SCHEDULE ROUTES
  *  ***/
+@ApiTags('Semesters')
 @Controller('semesters/:semesterUuid/schedules')
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
@@ -114,6 +115,7 @@ export class SchedulesController {
 /***
  * SCHEDULE SHIFT ROUTES
  *  ***/
+@ApiTags('Semesters')
 @Controller('semesters/:semesterUuid/schedules/:scheduleUuid/schedule-shifts')
 export class ScheduleShiftsController {
   constructor(private readonly scheduleShiftsService: ScheduleShiftsService) {}
@@ -170,6 +172,7 @@ export class ScheduleShiftsController {
 /***
  * SCHEDULE SHIFT TASK ROUTES
  *  ***/
+@ApiTags('Semesters')
 @Controller(
   'semesters/:semesterUuid/schedules/:scheduleUuid/schedule-shifts/:scheduleShiftUuid/schedule-shift-tasks',
 )
