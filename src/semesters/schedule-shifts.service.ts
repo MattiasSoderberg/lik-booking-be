@@ -12,10 +12,35 @@ import { Prisma } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
 import { UpdateScheduleShiftDto } from './dto/update-schedule-shift.dto';
 import { accessibleBy } from '@casl/prisma';
+import { CreateScheduleShiftTaskDto } from './dto/create-schedule-shift-task.dto';
 
 @Injectable()
 export class ScheduleShiftsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async createScheduleTask(
+    scheduleShiftId: string,
+    createScheduleTaskDto: CreateScheduleShiftTaskDto,
+    ability: AppAbility,
+  ) {
+    if (!ability.can(Action.Create, 'ScheduleShiftTask')) {
+      throw new AdminRouteException();
+    }
+
+    try {
+      const dataToCreate = {
+        ...createScheduleTaskDto,
+        scheduleShift: {
+          connect: { uuid: scheduleShiftId },
+        },
+      };
+      return await this.prisma.scheduleShiftTask.create({
+        data: dataToCreate,
+      });
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
 
   async create(
     scheduleId: string,
