@@ -20,6 +20,7 @@ import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { ScheduleValidationPipe } from './pipes/schedule-validation.pipe';
 import { CreateScheduleShiftDto } from './dto/create-schedule-shift.dto';
 import { ScheduleShiftsService } from './schedule-shifts.service';
+import { UpdateScheduleShiftDto } from './dto/update-schedule-shift.dto';
 
 @ApiTags('Semesters')
 @Controller('semesters')
@@ -75,14 +76,53 @@ export class SemestersController {
     return this.schedulesService.remove(uuid, ability);
   }
 
-  @Post('schedules/:uuid/schedule-shift')
+  @Post('schedules/:uuid/schedule-shifts')
   createScheduleShift(
     @Param('uuid') uuid: string,
     @Body() createScheduleShiftDto: CreateScheduleShiftDto,
     @Request() req: AuthenticatedRequest,
   ) {
     const { ability, user } = req;
-    return;
+    return this.scheduleShiftsService.create(
+      uuid,
+      createScheduleShiftDto,
+      ability,
+      user,
+    );
+  }
+
+  @Get('schedules/:uuid/schedule-shifts')
+  findAllScheduleShifts(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.scheduleShiftsService.findAll(uuid, ability);
+  }
+
+  @Patch('schedules/schedule-shifts/:uuid')
+  updateScheduleShift(
+    @Param('uuid') uuid: string,
+    @Body() updateScheduleShiftDto: UpdateScheduleShiftDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    console.log('SCHEDULE PATCH', uuid);
+    const { ability, user } = req;
+    return this.scheduleShiftsService.update(
+      uuid,
+      updateScheduleShiftDto,
+      ability,
+      user,
+    );
+  }
+
+  @Delete('schedules/schedule-shifts/:uuid')
+  deleteScheduleShift(
+    @Param('uuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.scheduleShiftsService.remove(uuid, ability);
   }
 
   @Post(':semesterUuid/schedules')
