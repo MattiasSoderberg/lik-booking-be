@@ -16,10 +16,6 @@ export class ScheduleShiftValidationPipe implements PipeTransform {
     dateStartAt.setUTCHours(0, 0, 0, 0);
     dateEndAt.setUTCHours(23, 59, 59, 999);
 
-    if (startAt > endAt) {
-      throw new BadRequestException('Start time can not be after end time');
-    }
-
     if (startAt < dateStartAt || endAt > dateEndAt) {
       throw new BadRequestException(
         'A shift must start and end within same date',
