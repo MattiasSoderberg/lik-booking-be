@@ -245,20 +245,17 @@ async function main() {
     }
   }
 
-  for await (const semester of semesters) {
-    const existingSemesters = await prisma.semester.findFirst({});
+  const existingSemesters = await prisma.semester.findFirst({});
+  if (!existingSemesters) {
+    for await (const semester of semesters) {
+      const year = new Date(semester.startAt).getFullYear();
+      const result = await prisma.semester.create({
+        data: { ...semester, year },
+      });
 
-    if (existingSemesters) {
-      break;
-    }
-
-    const year = new Date(semester.startAt).getFullYear();
-    const result = await prisma.semester.create({
-      data: { ...semester, year },
-    });
-
-    if (result) {
-      semestersCount++;
+      if (result) {
+        semestersCount++;
+      }
     }
   }
 
@@ -304,6 +301,10 @@ main()
 
     if (res.assetsCount > 0) {
       logger.log(`Assets created: ${res.assetsCount}`);
+    }
+
+    if (res.semestersCount > 0) {
+      logger.log(`Semesters created: ${res.semestersCount}`);
     }
 
     await prisma.$disconnect();
