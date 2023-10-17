@@ -24,6 +24,7 @@ import { UpdateScheduleShiftDto } from './dto/update-schedule-shift.dto';
 import { ScheduleShiftTasksService } from './schedule-shift-tasks.service';
 import { CreateScheduleShiftTaskDto } from './dto/create-schedule-shift-task.dto';
 import { UpdateScheduleShiftTaskDto } from './dto/update-schedule-shift-task.dto';
+import { ScheduleShiftValidationPipe } from './pipes/schedule-shift-validation.pipe';
 
 @ApiTags('Semesters')
 /***
@@ -123,7 +124,8 @@ export class ScheduleShiftsController {
   @Post()
   create(
     @Param('scheduleUuid') uuid: string,
-    @Body() createScheduleShiftDto: CreateScheduleShiftDto,
+    @Body(ScheduleShiftValidationPipe)
+    createScheduleShiftDto: CreateScheduleShiftDto,
     @Request() req: AuthenticatedRequest,
   ) {
     const { ability, user } = req;
