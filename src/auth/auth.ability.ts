@@ -6,6 +6,7 @@ import {
   EventGroup,
   Schedule,
   ScheduleShift,
+  ScheduleShiftTask,
   Semester,
   User,
 } from '@prisma/client';
@@ -18,6 +19,7 @@ export type AppSubjects = Subjects<{
   Semester: Semester;
   Schedule: Schedule;
   ScheduleShift: ScheduleShift;
+  ScheduleShiftTask: ScheduleShiftTask;
 }>;
 
 export type AppAbility = PureAbility<
