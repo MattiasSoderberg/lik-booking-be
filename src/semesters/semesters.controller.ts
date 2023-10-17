@@ -21,15 +21,17 @@ import { ScheduleValidationPipe } from './pipes/schedule-validation.pipe';
 import { CreateScheduleShiftDto } from './dto/create-schedule-shift.dto';
 import { ScheduleShiftsService } from './schedule-shifts.service';
 import { UpdateScheduleShiftDto } from './dto/update-schedule-shift.dto';
+import { ScheduleShiftTasksService } from './schedule-shift-tasks.service';
+import { CreateScheduleShiftTaskDto } from './dto/create-schedule-shift-task.dto';
+import { UpdateScheduleShiftTaskDto } from './dto/update-schedule-shift-task.dto';
 
 @ApiTags('Semesters')
+/***
+ * SEMESTER ROUTES
+ *  ***/
 @Controller('semesters')
 export class SemestersController {
-  constructor(
-    private readonly semestersService: SemestersService,
-    private readonly schedulesService: SchedulesService,
-    private readonly scheduleShiftsService: ScheduleShiftsService,
-  ) {}
+  constructor(private readonly semestersService: SemestersService) {}
 
   @Post()
   create(
@@ -66,67 +68,17 @@ export class SemestersController {
     const { ability } = req;
     return this.semestersService.remove(uuid, ability);
   }
+}
 
-  @Delete('schedules/:uuid')
-  removeSchedule(
-    @Param('uuid') uuid: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    const { ability } = req;
-    return this.schedulesService.remove(uuid, ability);
-  }
+/***
+ * SCHEDULE ROUTES
+ *  ***/
+@Controller('semesters/:semesterUuid/schedules')
+export class SchedulesController {
+  constructor(private readonly schedulesService: SchedulesService) {}
 
-  @Post('schedules/:uuid/schedule-shifts')
-  createScheduleShift(
-    @Param('uuid') uuid: string,
-    @Body() createScheduleShiftDto: CreateScheduleShiftDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    const { ability, user } = req;
-    return this.scheduleShiftsService.create(
-      uuid,
-      createScheduleShiftDto,
-      ability,
-      user,
-    );
-  }
-
-  @Get('schedules/:uuid/schedule-shifts')
-  findAllScheduleShifts(
-    @Param('uuid') uuid: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    const { ability } = req;
-    return this.scheduleShiftsService.findAll(uuid, ability);
-  }
-
-  @Patch('schedules/schedule-shifts/:uuid')
-  updateScheduleShift(
-    @Param('uuid') uuid: string,
-    @Body() updateScheduleShiftDto: UpdateScheduleShiftDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    console.log('SCHEDULE PATCH', uuid);
-    const { ability, user } = req;
-    return this.scheduleShiftsService.update(
-      uuid,
-      updateScheduleShiftDto,
-      ability,
-      user,
-    );
-  }
-
-  @Delete('schedules/schedule-shifts/:uuid')
-  deleteScheduleShift(
-    @Param('uuid') uuid: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    const { ability } = req;
-    return this.scheduleShiftsService.remove(uuid, ability);
-  }
-
-  @Post(':semesterUuid/schedules')
-  createSchedule(
+  @Post()
+  create(
     @Param('semesterUuid') semesterUuid: string,
     @Body(ScheduleValidationPipe) createScheduleDto: CreateScheduleDto,
     @Request() req: AuthenticatedRequest,
@@ -140,12 +92,117 @@ export class SemestersController {
     );
   }
 
-  @Get(':semesterUuid/schedules')
-  findAllSchedules(
+  @Get()
+  findAllBySemester(
     @Param('semesterUuid') semesterUuid: string,
     @Request() req: AuthenticatedRequest,
   ) {
     const { ability } = req;
     return this.schedulesService.findAllBySemester(semesterUuid, ability);
   }
+
+  @Delete(':scheduleUuid')
+  remove(
+    @Param('scheduleUuid') scheduleUuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.schedulesService.remove(scheduleUuid, ability);
+  }
+}
+
+/***
+ * SCHEDULE SHIFT ROUTES
+ *  ***/
+@Controller('semesters/:semesterUuid/schedules/:scheduleUuid/schedule-shifts')
+export class ScheduleShiftsController {
+  constructor(private readonly scheduleShiftsService: ScheduleShiftsService) {}
+
+  @Post()
+  create(
+    @Param('scheduleUuid') uuid: string,
+    @Body() createScheduleShiftDto: CreateScheduleShiftDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability, user } = req;
+    return this.scheduleShiftsService.create(
+      uuid,
+      createScheduleShiftDto,
+      ability,
+      user,
+    );
+  }
+
+  @Get()
+  findAllBySchedule(
+    @Param('scheduleUuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.scheduleShiftsService.findAll(uuid, ability);
+  }
+
+  @Patch(':scheduleShiftUuid')
+  update(
+    @Param('scheduleShiftUuid') uuid: string,
+    @Body() updateScheduleShiftDto: UpdateScheduleShiftDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability, user } = req;
+    return this.scheduleShiftsService.update(
+      uuid,
+      updateScheduleShiftDto,
+      ability,
+      user,
+    );
+  }
+
+  @Delete(':scheduleShiftUuid')
+  delete(
+    @Param('scheduleShiftUuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.scheduleShiftsService.remove(uuid, ability);
+  }
+}
+
+/***
+ * SCHEDULE SHIFT TASK ROUTES
+ *  ***/
+@Controller(
+  'semesters/:semesterUuid/schedules/:scheduleUuid/schedule-shifts/:scheduleShiftUuid/schedule-shift-tasks',
+)
+export class ScheduleShiftTasksController {
+  constructor(
+    private readonly scheduleShiftTasksService: ScheduleShiftTasksService,
+  ) {}
+
+  @Post()
+  create(
+    @Param('scheduleShiftUuid') uuid: string,
+    @Body() createScheduleShiftTaskDto: CreateScheduleShiftTaskDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability, user } = req;
+    return this.scheduleShiftTasksService.create(
+      uuid,
+      createScheduleShiftTaskDto,
+      ability,
+      user,
+    );
+  }
+
+  @Patch(':scheduleShiftTaskUuid')
+  update(
+    @Param('scheduleShiftTaskUuid') uuid: string,
+    @Body() updateScheduleTaskDto: UpdateScheduleShiftTaskDto,
+    @Request() req: AuthenticatedRequest,
+  ) {}
+
+  @Delete(':scheduleShiftTaskUuid')
+  remove(
+    @Param('scheduleShiftTaskUuid') uuid: string,
+    @Request() req: AuthenticatedRequest,
+  ) {}
 }

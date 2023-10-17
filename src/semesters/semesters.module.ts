@@ -1,14 +1,30 @@
 import { Module } from '@nestjs/common';
 import { SemestersService } from './semesters.service';
-import { SemestersController } from './semesters.controller';
+import {
+  ScheduleShiftTasksController,
+  ScheduleShiftsController,
+  SchedulesController,
+  SemestersController,
+} from './semesters.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { EventsModule } from 'src/events/events.module';
 import { SchedulesService } from './schedules.service';
 import { ScheduleShiftsService } from './schedule-shifts.service';
+import { ScheduleShiftTasksService } from './schedule-shift-tasks.service';
 
 @Module({
-  controllers: [SemestersController],
-  providers: [SemestersService, SchedulesService, ScheduleShiftsService],
+  controllers: [
+    SemestersController,
+    SchedulesController,
+    ScheduleShiftsController,
+    ScheduleShiftTasksController,
+  ],
+  providers: [
+    SemestersService,
+    SchedulesService,
+    ScheduleShiftsService,
+    ScheduleShiftTasksService,
+  ],
   imports: [PrismaModule, EventsModule],
 })
 export class SemestersModule {}
