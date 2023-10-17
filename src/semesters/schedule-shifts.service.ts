@@ -18,30 +18,6 @@ import { CreateScheduleShiftTaskDto } from './dto/create-schedule-shift-task.dto
 export class ScheduleShiftsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createScheduleTask(
-    scheduleShiftId: string,
-    createScheduleTaskDto: CreateScheduleShiftTaskDto,
-    ability: AppAbility,
-  ) {
-    if (!ability.can(Action.Create, 'ScheduleShiftTask')) {
-      throw new AdminRouteException();
-    }
-
-    try {
-      const dataToCreate = {
-        ...createScheduleTaskDto,
-        scheduleShift: {
-          connect: { uuid: scheduleShiftId },
-        },
-      };
-      return await this.prisma.scheduleShiftTask.create({
-        data: dataToCreate,
-      });
-    } catch (error) {
-      throw new BadRequestException(error);
-    }
-  }
-
   async create(
     scheduleId: string,
     createScheduleShiftDto: CreateScheduleShiftDto,
@@ -78,6 +54,7 @@ export class ScheduleShiftsService {
         throw new BadRequestException('Shift already exists');
       }
       throw new InternalServerErrorException(
+        error,
         'Something went wrong when creating shift.',
       );
     }
