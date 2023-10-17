@@ -18,9 +18,10 @@ export class ScheduleShiftsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(
-    scheduleId,
+    scheduleId: string,
     createScheduleShiftDto: CreateScheduleShiftDto,
     ability: AppAbility,
+    // TODO FIX USER TYPE
     user,
   ) {
     if (!ability.can(Action.Create, 'ScheduleShift')) {
@@ -73,6 +74,7 @@ export class ScheduleShiftsService {
     uuid: string,
     updateScheduleShiftDto: UpdateScheduleShiftDto,
     ability: AppAbility,
+    // TODO FIX USER TYPE
     user,
   ) {
     if (!ability.can(Action.Update, 'ScheduleShift')) {
