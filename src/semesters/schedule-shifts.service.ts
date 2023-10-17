@@ -60,12 +60,13 @@ export class ScheduleShiftsService {
     }
   }
 
-  async findAll(uuid: string, ability: AppAbility) {
+  async findAllBySchedule(uuid: string, ability: AppAbility) {
     try {
       return await this.prisma.scheduleShift.findMany({
         where: {
           AND: [accessibleBy(ability).ScheduleShift, { scheduleId: uuid }],
         },
+        include: { tasks: true },
       });
     } catch (error) {
       throw new AdminRouteException();

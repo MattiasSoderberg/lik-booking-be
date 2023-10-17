@@ -144,7 +144,7 @@ export class ScheduleShiftsController {
     @Request() req: AuthenticatedRequest,
   ) {
     const { ability } = req;
-    return this.scheduleShiftsService.findAll(uuid, ability);
+    return this.scheduleShiftsService.findAllBySchedule(uuid, ability);
   }
 
   @Patch(':scheduleShiftUuid')
