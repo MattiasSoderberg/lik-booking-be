@@ -27,8 +27,9 @@ export class UsersController {
 
   @Get('me')
   findMe(@Request() req: AuthenticatedRequest) {
-    const { user } = req;
-    return this.usersService.findMe(user);
+    const { ability, user } = req;
+    // return this.usersService.findMe(user);
+    return this.usersService.findOneUser(user.uuid, ability);
   }
 
   @Post()
