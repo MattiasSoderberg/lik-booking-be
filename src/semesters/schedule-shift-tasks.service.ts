@@ -5,6 +5,7 @@ import { AppAbility } from 'src/auth/auth.ability';
 import { UpdateScheduleShiftTaskDto } from './dto/update-schedule-shift-task.dto';
 import { Action } from 'src/utils/action.enum';
 import { AdminRouteException } from 'src/auth/exceptions/admin-route.exception';
+import { AuthenticatedUser } from 'src/auth/auth.interface';
 
 @Injectable()
 export class ScheduleShiftTasksService {
@@ -14,8 +15,7 @@ export class ScheduleShiftTasksService {
     uuid: string,
     createScheduleShiftTaskDto: CreateScheduleShiftTaskDto,
     ability: AppAbility,
-    // TODO FIX USER TYPE
-    user,
+    user: AuthenticatedUser,
   ) {
     if (!ability.can(Action.Create, 'ScheduleShiftTask')) {
       throw new AdminRouteException();
@@ -41,8 +41,7 @@ export class ScheduleShiftTasksService {
     uuid: string,
     updateScheduleShiftTaskDto: UpdateScheduleShiftTaskDto,
     ability: AppAbility,
-    // TODO FIX USER TYPE
-    user,
+    user: AuthenticatedUser,
   ) {}
 
   async findAllByScheduleShift(uuid: string, ability: AppAbility) {}

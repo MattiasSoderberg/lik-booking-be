@@ -14,6 +14,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { accessibleBy } from '@casl/prisma';
 import { HolidayWeeks } from 'src/utils/constants.enum';
 import { EventsService } from 'src/events/events.service';
+import { AuthenticatedUser } from 'src/auth/auth.interface';
 
 @Injectable()
 export class SemestersService {
@@ -25,7 +26,7 @@ export class SemestersService {
   async create(
     createSemesterDto: CreateSemesterDto,
     ability: AppAbility,
-    user,
+    user: AuthenticatedUser,
   ) {
     if (!ability.can(Action.Create, 'Semester')) {
       throw new AdminRouteException();
@@ -73,6 +74,7 @@ export class SemestersService {
     }
   }
 
+  //TODO Add findOneByYear and update
   findOne(id: number) {
     return `This action returns a #${id} semester`;
   }

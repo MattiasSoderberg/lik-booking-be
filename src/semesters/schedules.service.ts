@@ -14,6 +14,7 @@ import { EventGroup, Prisma, Schedule, Semester } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
 import { CreateEventDto } from 'src/events/dto/create-event.dto';
 import { SemesterPlans } from 'src/utils/constants.enum';
+import { AuthenticatedUser } from 'src/auth/auth.interface';
 
 @Injectable()
 export class SchedulesService {
@@ -22,12 +23,11 @@ export class SchedulesService {
     private readonly eventsService: EventsService,
   ) {}
 
-  // TODO FIX USER TYPE
   async create(
     semesterUuid: string,
     createScheduleDto: CreateScheduleDto,
     ability: AppAbility,
-    user,
+    user: AuthenticatedUser,
   ) {
     if (!ability.can(Action.Create, 'Schedule')) {
       throw new AdminRouteException();
