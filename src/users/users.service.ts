@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -94,7 +95,14 @@ export class UsersService {
   }
 
   async findOneUserByEmail(email: string) {
-    return await this.prisma.user.findUnique({ where: { email } });
+    try {
+      return await this.prisma.user.findFirst({
+        where: { email },
+        include: { role: { include: { permissions: true } } },
+      });
+    } catch (error) {
+      throw new BadRequestException('User not found.');
+    }
   }
 
   async updateUser(
