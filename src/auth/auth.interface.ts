@@ -1,10 +1,23 @@
-import { User } from '@prisma/client';
+import { Permission, Role, User } from '@prisma/client';
 import { AppAbility } from './auth.ability';
 import { Request } from 'express';
 
+export interface PayloadRole extends Role {
+  permissions: Permission[];
+}
+
+export interface Payload {
+  user: {
+    uuid: User['uuid'];
+    role: PayloadRole;
+  };
+}
+
 export type AuthenticatedUser = {
-  user: User;
-  ability: AppAbility;
+  uuid: User['uuid'];
 };
 
-export type AuthenticatedRequest = AuthenticatedUser & Request;
+export interface AuthenticatedRequest extends Request {
+  user: AuthenticatedUser;
+  ability: AppAbility;
+}
