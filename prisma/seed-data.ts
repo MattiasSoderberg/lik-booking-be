@@ -133,6 +133,41 @@ const users = [
   },
 ];
 
+const assets = [
+  {
+    name: 'häst1',
+  },
+  {
+    name: 'häst2',
+  },
+];
+
+const clients = [
+  {
+    firstName: 'Client',
+    lastName: 'Elev',
+    bornAt: '2013-03-12T00:00:00Z',
+  },
+];
+
+enum SemesterPeriods {
+  SPRING = 'SPRING',
+  FALL = 'FALL',
+}
+
+const semesters = [
+  {
+    startAt: '2023-01-09T00:00:00Z',
+    endAt: '2023-06-15T00:00:00Z',
+    period: SemesterPeriods['SPRING'],
+  },
+  {
+    startAt: '2023-08-16T00:00:00Z',
+    endAt: '2023-12-21T00:00:00Z',
+    period: SemesterPeriods['FALL'],
+  },
+];
+
 const prisma = new PrismaClient();
 const logger = new Logger('SEED ROLES AND PERMISSIONS');
 
@@ -140,6 +175,10 @@ async function main() {
   let roleCount = 0;
   let permissionCount = 0;
   let userCount = 0;
+  let semestersCount = 0;
+  let assetsCount = 0;
+  let clientRelative = null;
+  let clientAsset = null;
 
   for await (const role of roles) {
     const result = await prisma.role.upsert({
@@ -187,16 +226,87 @@ async function main() {
     });
     if (result) {
       userCount++;
+      if (result.roleId === 3) {
+        clientRelative = result;
+      }
     }
   }
-  return { roleCount, permissionCount, userCount };
+
+  const existingAssets = await prisma.asset.findFirst({});
+  if (!existingAssets) {
+    for await (const asset of assets) {
+      const result = await prisma.asset.create({ data: asset });
+      if (result) {
+        assetsCount++;
+        if (!clientAsset) {
+          clientAsset = result;
+        }
+      }
+    }
+  }
+
+  const existingSemesters = await prisma.semester.findFirst({});
+  if (!existingSemesters) {
+    for await (const semester of semesters) {
+      const year = new Date(semester.startAt).getFullYear();
+      const result = await prisma.semester.create({
+        data: { ...semester, year },
+      });
+
+      if (result) {
+        semestersCount++;
+      }
+    }
+  }
+
+  return {
+    roleCount,
+    permissionCount,
+    userCount,
+    semestersCount,
+    assetsCount,
+    clientRelative,
+    clientAsset,
+  };
+}
+
+async function createClient(relativeId: string, assetId: string) {
+  const result = await prisma.client.create({
+    data: {
+      ...clients[0],
+      relatives: { createMany: { data: [{ userId: relativeId }] } },
+      assets: { createMany: { data: [{ assetId }] } },
+    },
+  });
+
+  return result && 1;
 }
 
 main()
   .then(async (res) => {
+    if (res?.clientRelative && res?.clientAsset) {
+      const client = await createClient(
+        res.clientRelative.uuid,
+        res.clientAsset.uuid,
+      );
+
+      if (client) {
+        logger.log(`Clients created: ${client}`);
+      }
+    }
+
     logger.log(`Roles created: ${res.roleCount}`);
     logger.log(`Permissions created: ${res.permissionCount}`);
     logger.log(`Users created: ${res.userCount}`);
+
+    if (res.assetsCount > 0) {
+      logger.log(`Assets created: ${res.assetsCount}`);
+    }
+
+    if (res.semestersCount > 0) {
+      logger.log(`Semesters created: ${res.semestersCount}`);
+    }
+
     await prisma.$disconnect();
   })
   .catch(async (error) => {

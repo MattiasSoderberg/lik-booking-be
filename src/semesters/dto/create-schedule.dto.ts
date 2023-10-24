@@ -1,71 +1,71 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDateString,
+  IsEnum,
   IsObject,
   IsOptional,
-  IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
+
+enum SemesterPlan {
+  FULL = 'FULL',
+  HALF = 'HALF',
+  STAFF = 'STAFF',
+}
 
 class RelationEntity {
   @IsUUID()
   uuid: string;
 }
 
-export class CreateEventDto {
-  @ApiProperty()
-  @IsDateString()
-  startAt: Date;
-
-  @ApiProperty()
-  @IsDateString()
-  endAt: Date;
+export class CreateScheduleDto {
+  @ApiProperty({ enum: SemesterPlan })
+  @IsEnum(SemesterPlan)
+  semesterPlan: SemesterPlan;
 
   @ApiProperty()
   @IsOptional()
-  @IsString()
-  note?: string;
-
-  @ApiProperty()
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-
-  @ApiProperty({
-    description:
-      'Blocking events are for blocking date span for other events. Eg. Closed for holiday.',
-  })
-  @IsBoolean()
-  @IsOptional()
-  isBlocking?: boolean;
-
-  @ApiProperty()
-  @IsOptional()
-  @IsObject({ each: true })
   @ValidateNested({
     message: ' must be an object with key "uuid" and value (string)',
   })
+  @IsObject({ each: true })
   @Type(() => RelationEntity)
-  asset?: RelationEntity;
+  client?: RelationEntity;
 
   @ApiProperty()
   @IsOptional()
-  @IsObject({ each: true })
   @ValidateNested({
     message: ' must be an object with key "uuid" and value (string)',
   })
+  @IsObject({ each: true })
   @Type(() => RelationEntity)
   staff?: RelationEntity;
 
   @ApiProperty()
   @IsOptional()
-  @IsObject({ each: true })
   @ValidateNested({
     message: ' must be an object with key "uuid" and value (string)',
   })
+  @IsObject({ each: true })
   @Type(() => RelationEntity)
-  client?: RelationEntity;
+  asset?: RelationEntity;
+
+  @ApiProperty()
+  @IsOptional()
+  @ValidateNested({
+    message: ' must be an object with key "uuid" and value (string)',
+  })
+  @IsObject({ each: true })
+  @Type(() => RelationEntity)
+  eventStaff?: RelationEntity;
+
+  @ApiProperty()
+  @IsOptional()
+  @ValidateNested({
+    message: ' must be an object with key "uuid" and value (string)',
+  })
+  @IsObject({ each: true })
+  @Type(() => RelationEntity)
+  eventGroup?: RelationEntity;
 }
