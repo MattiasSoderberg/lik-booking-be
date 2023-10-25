@@ -13,6 +13,7 @@ import { PrismaErrors } from 'src/utils/prisma-errors.enum';
 import { UpdateScheduleShiftDto } from './dto/update-schedule-shift.dto';
 import { accessibleBy } from '@casl/prisma';
 import { CreateScheduleShiftTaskDto } from './dto/create-schedule-shift-task.dto';
+import { AuthenticatedUser } from 'src/auth/auth.interface';
 
 @Injectable()
 export class ScheduleShiftsService {
@@ -22,8 +23,7 @@ export class ScheduleShiftsService {
     scheduleId: string,
     createScheduleShiftDto: CreateScheduleShiftDto,
     ability: AppAbility,
-    // TODO FIX USER TYPE
-    user,
+    user: AuthenticatedUser,
   ) {
     if (!ability.can(Action.Create, 'ScheduleShift')) {
       throw new AdminRouteException();
@@ -77,8 +77,7 @@ export class ScheduleShiftsService {
     uuid: string,
     updateScheduleShiftDto: UpdateScheduleShiftDto,
     ability: AppAbility,
-    // TODO FIX USER TYPE
-    user,
+    user: AuthenticatedUser,
   ) {
     if (!ability.can(Action.Update, 'ScheduleShift')) {
       throw new AdminRouteException();

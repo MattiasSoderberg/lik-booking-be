@@ -15,13 +15,17 @@ import { accessibleBy } from '@casl/prisma';
 import { Prisma, Semester } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
 import { AdminRouteException } from 'src/auth/exceptions/admin-route.exception';
+import { AuthenticatedUser } from 'src/auth/auth.interface';
 
 @Injectable()
 export class EventsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createEventDto: CreateEventDto, ability: AppAbility, user) {
-    // TODO fix user type
+  async create(
+    createEventDto: CreateEventDto,
+    ability: AppAbility,
+    user: AuthenticatedUser,
+  ) {
     if (!ability.can(Action.Create, 'Event')) {
       throw new ForbiddenException();
     }
@@ -84,6 +88,7 @@ export class EventsService {
     }
   }
 
+  // TODO add update logic
   update(uuid: string, updateEventDto: UpdateEventDto) {
     return `This action updates a #${uuid} event`;
   }

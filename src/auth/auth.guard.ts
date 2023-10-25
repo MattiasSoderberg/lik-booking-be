@@ -8,8 +8,8 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { UsersService } from 'src/users/users.service';
 import { AuthAbility } from './auth.ability';
+import { Payload } from './auth.interface';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -17,7 +17,6 @@ export class AuthGuard implements CanActivate {
     private jwtService: JwtService,
     private reflector: Reflector,
     private authAbility: AuthAbility,
-    private usersService: UsersService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -37,20 +36,18 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload: Payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET,
       });
 
-      request['user'] = await this.usersService.getUserWPermissions(
-        payload.sub,
-      );
+      const ability = await this.authAbility.createAbility(payload['user']);
+      const { role, ...rest } = payload['user'];
+
+      request['user'] = rest;
+      request['ability'] = ability;
     } catch (error) {
       throw new UnauthorizedException();
     }
-
-    const ability = await this.authAbility.createAbility(request['user']);
-
-    request['ability'] = ability;
 
     return true;
   }
