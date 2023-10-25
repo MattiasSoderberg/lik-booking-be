@@ -80,7 +80,6 @@ export class SchedulesService {
             alternativeWeekSchedule,
           );
 
-          console.log(scheduleShiftData.length);
           try {
             return await this.prisma.schedule.update({
               where: { uuid: schedule.uuid },
@@ -270,11 +269,6 @@ export class SchedulesService {
         );
       }
 
-      console.log(
-        this.getWeekNumber(shiftData.startAt),
-        currentScheduleShift.weekday,
-        shiftData,
-      );
       while (shiftData.startAt < semester.endAt) {
         if (!weekdayShiftList.length) {
           weekdayShiftList.push({ ...shiftData });
@@ -470,7 +464,6 @@ export class SchedulesService {
       const previousYearStartAt = new Date(
         `${yearStartAt.getUTCFullYear() - 1}-01-01`,
       );
-      console.log('IN IF', previousYearStartAt);
       previousYearStartAt.setUTCDate(
         previousYearStartAt.getUTCDate() +
           daysToFirstMonday(previousYearStartAt),
