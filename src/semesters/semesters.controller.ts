@@ -52,18 +52,21 @@ export class SemestersController {
     return this.semestersService.findAll(ability);
   }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.semestersService.findOne(+id);
-  // }
+  @Get(':uuid')
+  findOne(@Param('uuid') uuid: string, @Request() req: AuthenticatedRequest) {
+    const { ability } = req;
+    return this.semestersService.findOne(uuid, ability);
+  }
 
-  // @Patch(':id')
-  // update(
-  //   @Param('id') id: string,
-  //   @Body() updateSemesterDto: UpdateSemesterDto,
-  // ) {
-  //   return this.semestersService.update(+id, updateSemesterDto);
-  // }
+  @Patch(':uuid')
+  update(
+    @Param('uuid') uuid: string,
+    @Body() updateSemesterDto: UpdateSemesterDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const { ability } = req;
+    return this.semestersService.update(uuid, updateSemesterDto, ability);
+  }
 
   @Delete(':uuid')
   remove(@Param('uuid') uuid: string, @Request() req: AuthenticatedRequest) {

@@ -12,7 +12,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { accessibleBy } from '@casl/prisma';
-import { HolidayWeeks } from 'src/utils/constants.enum';
+import { HolidayWeeks, SemesterPeriods } from 'src/utils/constants.enum';
 import { EventsService } from 'src/events/events.service';
 import { AuthenticatedUser } from 'src/auth/auth.interface';
 
@@ -75,12 +75,28 @@ export class SemestersService {
   }
 
   //TODO Add findOneByYear and update
-  findOne(id: number) {
-    return `This action returns a #${id} semester`;
+  async findOne(uuid: string, ability: AppAbility) {
+    try {
+      await this.prisma.semester.findFirst({
+        where: { AND: [{ uuid }, accessibleBy(ability).Semester] },
+      });
+    } catch (error) {
+      throw new BadRequestException(error?.message);
+    }
   }
 
-  update(id: number, updateSemesterDto: UpdateSemesterDto) {
-    return `This action updates a #${id} semester`;
+  async update(
+    uuid: string,
+    updateSemesterDto: UpdateSemesterDto,
+    ability: AppAbility,
+  ) {
+    if (!ability.can(Action.Update, 'Semester')) {
+      throw new AdminRouteException();
+    }
+    return await this.prisma.semester.update({
+      where: { uuid },
+      data: updateSemesterDto,
+    });
   }
 
   async remove(uuid: string, ability: AppAbility) {
