@@ -4,17 +4,27 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateScheduleDto } from './dto/create-schedule.dto';
+import {
+  CreateScheduleDto,
+  WeekScheduleShift,
+} from './dto/create-schedule.dto';
 import { AppAbility } from 'src/auth/auth.ability';
 import { accessibleBy } from '@casl/prisma';
 import { Action } from 'src/utils/action.enum';
 import { AdminRouteException } from 'src/auth/exceptions/admin-route.exception';
 import { EventsService } from 'src/events/events.service';
-import { EventGroup, Prisma, Schedule, Semester } from '@prisma/client';
+import {
+  EventGroup,
+  Prisma,
+  Schedule,
+  ScheduleShift,
+  Semester,
+} from '@prisma/client';
 import { PrismaErrors } from 'src/utils/prisma-errors.enum';
 import { CreateEventDto } from 'src/events/dto/create-event.dto';
 import { SemesterPlans } from 'src/utils/constants.enum';
 import { AuthenticatedUser } from 'src/auth/auth.interface';
+import { Weekdays } from 'src/utils/weekdays.enum';
 
 @Injectable()
 export class SchedulesService {
@@ -33,21 +43,61 @@ export class SchedulesService {
       throw new AdminRouteException();
     }
 
-    const { staff, client, eventGroup, asset, eventStaff, ...data } =
-      createScheduleDto;
+    const {
+      staff,
+      client,
+      eventGroup,
+      asset,
+      eventStaff,
+      weekSchedule,
+      alternativeWeekSchedule,
+      ...rest
+    } = createScheduleDto;
     const dataToCreate = {
-      ...data,
+      ...rest,
       scheduleFor: client?.uuid || staff?.uuid,
       semester: { connect: { uuid: semesterUuid } },
     };
 
     if (staff) {
-      dataToCreate['staff'] = {
-        connect: { ...staff },
-      };
-
       try {
-        return await this.prisma.schedule.create({ data: dataToCreate });
+        dataToCreate['staff'] = {
+          connect: { ...staff },
+        };
+        const schedule = await this.prisma.schedule.create({
+          data: dataToCreate,
+          include: { semester: true },
+        });
+
+        if (schedule) {
+          const { semester } = schedule;
+          const scheduleShiftData = await this.createShiftData(
+            user,
+            schedule,
+            semester,
+            staff,
+            weekSchedule,
+            alternativeWeekSchedule,
+          );
+
+          console.log(scheduleShiftData.length);
+          try {
+            return await this.prisma.schedule.update({
+              where: { uuid: schedule.uuid },
+              data: {
+                scheduleShifts: {
+                  create: scheduleShiftData,
+                },
+              },
+              include: { scheduleShifts: true },
+            });
+          } catch (error) {
+            await this.prisma.schedule.delete({
+              where: { uuid: schedule.uuid },
+            });
+            throw new InternalServerErrorException(error?.message);
+          }
+        }
       } catch (error) {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -56,6 +106,7 @@ export class SchedulesService {
           throw new BadRequestException('Staff schedule already exists.');
         }
         throw new InternalServerErrorException(
+          error?.message,
           'Something went wrong when creating schedule.',
         );
       }
@@ -160,6 +211,115 @@ export class SchedulesService {
   }
 
   /***
+   * CREATE ARRAY OF SHIFT DATA REPEATING EVERY WEEK FROM SCHEDULE START TO SCHEDULE END
+   *  ***/
+  private async createShiftData(
+    user: AuthenticatedUser,
+    schedule: Schedule,
+    semester: Semester,
+    staff: { uuid: string },
+    weekSchedule: WeekScheduleShift[],
+    alternativeWeekSchedule?: WeekScheduleShift[],
+  ): Promise<ScheduleShift[]> {
+    const shiftsList: ScheduleShift[] = [];
+
+    weekSchedule.forEach(async (scheduleShift) => {
+      const weekdayShiftList = [];
+      const { firstEventStartAt, firstEventEndAt } =
+        this.getFirstEventDateOfSemester(
+          semester,
+          Weekdays[scheduleShift.weekday],
+          scheduleShift.startAt,
+          scheduleShift.endAt,
+        );
+      const dateIdentifier = new Date(firstEventStartAt);
+      dateIdentifier.setUTCHours(0, 0, 0, 0);
+      const shiftData = {
+        startAt: firstEventStartAt,
+        endAt: firstEventEndAt,
+        createdBy: {
+          connect: { uuid: user.uuid },
+        },
+        userId: staff.uuid,
+        dateIdentifier,
+      };
+      const alternativeScheduleShift =
+        alternativeWeekSchedule &&
+        alternativeWeekSchedule.some(
+          (e) => Weekdays[e.weekday] === Weekdays[scheduleShift.weekday],
+        )
+          ? alternativeWeekSchedule.find(
+              (e) => Weekdays[e.weekday] === Weekdays[scheduleShift.weekday],
+            )
+          : null;
+
+      let currentScheduleShift = scheduleShift;
+
+      if (
+        alternativeScheduleShift &&
+        this.getWeekNumber(shiftData.startAt) % 2 !== 0
+      ) {
+        currentScheduleShift = alternativeScheduleShift;
+        shiftData['startAt'].setUTCHours(
+          parseInt(currentScheduleShift.startAt.split(':')[0]),
+          parseInt(currentScheduleShift.startAt.split(':')[1]),
+        );
+        shiftData['endAt'].setUTCHours(
+          parseInt(currentScheduleShift.endAt.split(':')[0]),
+          parseInt(currentScheduleShift.endAt.split(':')[1]),
+        );
+      }
+
+      console.log(
+        this.getWeekNumber(shiftData.startAt),
+        currentScheduleShift.weekday,
+        shiftData,
+      );
+      while (shiftData.startAt < semester.endAt) {
+        if (!weekdayShiftList.length) {
+          weekdayShiftList.push({ ...shiftData });
+        } else {
+          if (alternativeScheduleShift) {
+            if (this.getWeekNumber(shiftData.startAt) % 2 === 0) {
+              currentScheduleShift = alternativeScheduleShift;
+            } else {
+              currentScheduleShift = scheduleShift;
+            }
+
+            shiftData['startAt'] = this.getNextDate(
+              weekdayShiftList[weekdayShiftList.length - 1].startAt,
+              7,
+              currentScheduleShift.startAt,
+            );
+            shiftData['endAt'] = this.getNextDate(
+              weekdayShiftList[weekdayShiftList.length - 1].endAt,
+              7,
+              currentScheduleShift.endAt,
+            );
+          } else {
+            shiftData['startAt'] = this.getNextDate(
+              weekdayShiftList[weekdayShiftList.length - 1].startAt,
+              7,
+            );
+            shiftData['endAt'] = this.getNextDate(
+              weekdayShiftList[weekdayShiftList.length - 1].endAt,
+              7,
+            );
+          }
+          const dateIdentifier = new Date(shiftData['startAt']);
+          dateIdentifier.setUTCHours(0, 0, 0, 0);
+          shiftData['dateIdentifier'] = dateIdentifier;
+          weekdayShiftList.push({ ...shiftData });
+        }
+      }
+
+      shiftsList.push(...weekdayShiftList);
+    });
+
+    return shiftsList;
+  }
+
+  /***
    * CREATE ARRAY OF EVENT DATA OF LENGTH BASED ON SEMESTER PLAN (FULL OR HALF)
    *  ***/
   private async createEventData(
@@ -177,7 +337,12 @@ export class SchedulesService {
     const numberOfEvents: number = SemesterPlans[schedule.semesterPlan];
     const dateInterval = schedule.semesterPlan === 'FULL' ? 7 : 14;
     const { firstEventStartAt, firstEventEndAt } =
-      this.getFirstEventDateOfSemester(semester, eventGroup);
+      this.getFirstEventDateOfSemester(
+        semester,
+        eventGroup.weekday,
+        eventGroup.startAt,
+        eventGroup.endAt,
+      );
 
     const eventList: CreateEventDto[] = [];
 
@@ -222,52 +387,101 @@ export class SchedulesService {
   }
 
   /***
-   * GET THE FIRST DATE FROM EVENT GROUP WEEKDAY OF SEMESTER
+   * GET THE FIRST EVENT DATE OF SEMESTER
    *  ***/
   private getFirstEventDateOfSemester(
     semester: Semester,
-    eventGroup: EventGroup,
+    weekday: Weekdays,
+    startTime: string,
+    endTime: string,
   ) {
-    const { weekday } = eventGroup;
-    const firstEventStartAt = new Date(semester.startAt);
-
-    if (firstEventStartAt.getDay() !== eventGroup.weekday) {
-      const currentDate = firstEventStartAt.getDay();
-      const dateDifference =
-        currentDate > weekday
-          ? weekday - currentDate + 7
-          : weekday - currentDate;
-
-      firstEventStartAt.setUTCDate(
-        firstEventStartAt.getUTCDate() + dateDifference,
-      );
-    }
+    const firstEventStartAt = this.getFirstDateOfWeekday(semester, weekday);
 
     const firstEventEndAt = new Date(firstEventStartAt);
 
     firstEventStartAt.setUTCHours(
-      firstEventStartAt.getUTCHours() +
-        parseInt(eventGroup.startAt.split(':')[0]),
-      firstEventStartAt.getUTCMinutes() +
-        parseInt(eventGroup.startAt.split(':')[1]),
+      firstEventStartAt.getUTCHours() + parseInt(startTime.split(':')[0]),
+      firstEventStartAt.getUTCMinutes() + parseInt(startTime.split(':')[1]),
     );
 
     firstEventEndAt.setUTCHours(
-      firstEventEndAt.getUTCHours() + parseInt(eventGroup.endAt.split(':')[0]),
-      firstEventEndAt.getUTCMinutes() +
-        parseInt(eventGroup.endAt.split(':')[1]),
+      firstEventEndAt.getUTCHours() + parseInt(endTime.split(':')[0]),
+      firstEventEndAt.getUTCMinutes() + parseInt(endTime.split(':')[1]),
     );
 
     return { firstEventStartAt, firstEventEndAt };
   }
 
   /***
+   * GET THE FIRST DATE IN DATE RANGE MATCHING WEEKDAY
+   *  ***/
+  private getFirstDateOfWeekday(dateRange: Semester, weekday: Weekdays) {
+    const firstDate = new Date(dateRange.startAt);
+
+    if (firstDate.getDay() !== weekday) {
+      const currentDate = firstDate.getDay();
+      const dateDifference =
+        currentDate > weekday
+          ? weekday - currentDate + 7
+          : weekday - currentDate;
+
+      firstDate.setUTCDate(firstDate.getUTCDate() + dateDifference);
+    }
+
+    return firstDate;
+  }
+
+  /***
    * GET THE NEXT DATE FROM PREVIOUS BASED ON A DATE INTERVAL
    *  ***/
-  private getNextDate(fromDate: Date, nextDateInterval: number) {
+  private getNextDate(
+    fromDate: Date,
+    nextDateInterval: number,
+    militaryTime?: string,
+  ) {
     const nextDate = new Date(fromDate);
     nextDate.setUTCDate(nextDate.getUTCDate() + nextDateInterval);
 
+    if (militaryTime) {
+      const hours = parseInt(militaryTime.split(':')[0]);
+      const minutes = parseInt(militaryTime.split(':')[1]);
+      nextDate.setUTCHours(hours, minutes);
+    }
+
     return nextDate;
+  }
+
+  private getWeekNumber(date: Date) {
+    const daysToFirstMonday = (yearStartAt: Date) => {
+      return yearStartAt.getUTCDay() < 1
+        ? 1
+        : yearStartAt.getUTCDay() > 1
+        ? 7 - yearStartAt.getUTCDay() + 1
+        : 0;
+    };
+    const yearStartAt = new Date(`${date.getUTCFullYear()}-01-01`);
+    const dateTime = date.getTime();
+    const firstWeekStartAt = new Date(yearStartAt);
+    firstWeekStartAt.setUTCDate(
+      yearStartAt.getUTCDate() + daysToFirstMonday(yearStartAt),
+    );
+
+    if (date < firstWeekStartAt) {
+      const previousYearStartAt = new Date(
+        `${yearStartAt.getUTCFullYear() - 1}-01-01`,
+      );
+      console.log('IN IF', previousYearStartAt);
+      previousYearStartAt.setUTCDate(
+        previousYearStartAt.getUTCDate() +
+          daysToFirstMonday(previousYearStartAt),
+      );
+      firstWeekStartAt.setTime(previousYearStartAt.getTime());
+    }
+    const firstWeekStartTime = firstWeekStartAt.getTime();
+
+    const timeDifference = dateTime - firstWeekStartTime;
+    const weekNumber = Math.floor(timeDifference / 1000 / 3600 / 24 / 7 + 1);
+
+    return weekNumber;
   }
 }
