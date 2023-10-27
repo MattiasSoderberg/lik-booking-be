@@ -281,7 +281,7 @@ export class SchedulesService {
 
       while (shiftData.startAt < semester.endAt) {
         if (!weekdayShiftList.length) {
-          while (this.isShiftDateUnavailable(shiftData, events)) {
+          while (this.isDateUnavailable(shiftData, events)) {
             shiftData['startAt'] = this.getNextDate(shiftData.startAt, 7);
             shiftData['endAt'] = this.getNextDate(shiftData.endAt, 7);
             const dateIdentifier = new Date(shiftData['startAt']);
@@ -320,7 +320,7 @@ export class SchedulesService {
                 currentScheduleShift.endAt,
               );
             }
-          } while (this.isShiftDateUnavailable(shiftData, events));
+          } while (this.isDateUnavailable(shiftData, events));
           const dateIdentifier = new Date(shiftData['startAt']);
           dateIdentifier.setUTCHours(0, 0, 0, 0);
           shiftData['dateIdentifier'] = dateIdentifier;
@@ -360,17 +360,32 @@ export class SchedulesService {
       );
 
     const eventList: CreateEventDto[] = [];
+    const existingEvents = await this.prisma.event.findMany({
+      where: {
+        startAt: {
+          gte: semester.startAt,
+        },
+        endAt: {
+          lte: semester.endAt,
+        },
+        isActive: true,
+        OR: [
+          { isBlocking: true },
+          { assetId: asset.uuid },
+          { staffId: staff.uuid },
+        ],
+      },
+    });
+
+    const eventData: CreateEventDto = {
+      startAt: firstEventStartAt,
+      endAt: firstEventEndAt,
+      client: { uuid: schedule.clientId },
+      staff: { ...staff },
+      asset: { ...asset },
+    };
 
     for (let i = 0; i < numberOfEvents; i++) {
-      const eventData: CreateEventDto = {
-        startAt: firstEventStartAt,
-        endAt: firstEventEndAt,
-        client: { uuid: schedule.clientId },
-        staff: { ...staff },
-        asset: { ...asset },
-        note: `Schemalagt event nr: ${i + 1}/${numberOfEvents}`,
-      };
-
       if (eventList[0]) {
         eventData['startAt'] = this.getNextDate(
           eventList[i - 1].startAt,
@@ -382,9 +397,7 @@ export class SchedulesService {
         );
       }
 
-      while (
-        !(await this.eventsService.checkDateAvailability(eventData, semester))
-      ) {
+      while (this.isDateUnavailable(eventData, existingEvents)) {
         eventData['startAt'] = this.getNextDate(eventData.startAt, 7);
         eventData['endAt'] = this.getNextDate(eventData.endAt, 7);
 
@@ -395,7 +408,9 @@ export class SchedulesService {
         }
       }
 
-      eventList.push(eventData);
+      eventData['note'] = `Schemalagt event nr: ${i + 1}/${numberOfEvents}`;
+
+      eventList.push({ ...eventData });
     }
 
     return eventList;
@@ -499,12 +514,11 @@ export class SchedulesService {
     return weekNumber;
   }
 
-  private isShiftDateUnavailable(shiftData: any, events: Event[]) {
+  private isDateUnavailable(date: any, events: Event[]) {
     return events.some(
       (event) =>
-        (shiftData.startAt > event.startAt &&
-          shiftData.startAt < event.endAt) ||
-        (shiftData.endAt > event.startAt && shiftData.endAt < event.endAt),
+        (date.startAt > event.startAt && date.startAt < event.endAt) ||
+        (date.endAt > event.startAt && date.endAt < event.endAt),
     );
   }
 }
