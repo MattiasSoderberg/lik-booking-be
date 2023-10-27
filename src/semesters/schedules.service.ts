@@ -281,7 +281,7 @@ export class SchedulesService {
 
       while (shiftData.startAt < semester.endAt) {
         if (!weekdayShiftList.length) {
-          while (this.isDateUnavailable(shiftData, events)) {
+          while (this.isShiftDateUnavailable(shiftData, events)) {
             shiftData['startAt'] = this.getNextDate(shiftData.startAt, 7);
             shiftData['endAt'] = this.getNextDate(shiftData.endAt, 7);
             const dateIdentifier = new Date(shiftData['startAt']);
@@ -320,7 +320,7 @@ export class SchedulesService {
                 currentScheduleShift.endAt,
               );
             }
-          } while (this.isDateUnavailable(shiftData, events));
+          } while (this.isShiftDateUnavailable(shiftData, events));
           const dateIdentifier = new Date(shiftData['startAt']);
           dateIdentifier.setUTCHours(0, 0, 0, 0);
           shiftData['dateIdentifier'] = dateIdentifier;
@@ -499,14 +499,12 @@ export class SchedulesService {
     return weekNumber;
   }
 
-  private isDateUnavailable(shiftData: any, events: Event[]) {
-    const blocking = events.some(
+  private isShiftDateUnavailable(shiftData: any, events: Event[]) {
+    return events.some(
       (event) =>
         (shiftData.startAt > event.startAt &&
           shiftData.startAt < event.endAt) ||
         (shiftData.endAt > event.startAt && shiftData.endAt < event.endAt),
     );
-    console.log(blocking);
-    return blocking;
   }
 }
