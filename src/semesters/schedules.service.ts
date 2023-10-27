@@ -14,6 +14,7 @@ import { Action } from 'src/utils/action.enum';
 import { AdminRouteException } from 'src/auth/exceptions/admin-route.exception';
 import { EventsService } from 'src/events/events.service';
 import {
+  Event,
   EventGroup,
   Prisma,
   Schedule,
@@ -73,7 +74,6 @@ export class SchedulesService {
           const { semester } = schedule;
           const scheduleShiftData = await this.createShiftData(
             user,
-            schedule,
             semester,
             staff,
             weekSchedule,
@@ -214,13 +214,23 @@ export class SchedulesService {
    *  ***/
   private async createShiftData(
     user: AuthenticatedUser,
-    schedule: Schedule,
     semester: Semester,
     staff: { uuid: string },
     weekSchedule: WeekScheduleShift[],
     alternativeWeekSchedule?: WeekScheduleShift[],
   ): Promise<ScheduleShift[]> {
     const shiftsList: ScheduleShift[] = [];
+    const events = await this.prisma.event.findMany({
+      where: {
+        isBlocking: true,
+        startAt: {
+          gte: semester.startAt,
+        },
+        endAt: {
+          lte: semester.endAt,
+        },
+      },
+    });
 
     weekSchedule.forEach(async (scheduleShift) => {
       const weekdayShiftList = [];
@@ -271,35 +281,46 @@ export class SchedulesService {
 
       while (shiftData.startAt < semester.endAt) {
         if (!weekdayShiftList.length) {
+          while (this.isDateUnavailable(shiftData, events)) {
+            shiftData['startAt'] = this.getNextDate(shiftData.startAt, 7);
+            shiftData['endAt'] = this.getNextDate(shiftData.endAt, 7);
+            const dateIdentifier = new Date(shiftData['startAt']);
+            dateIdentifier.setUTCHours(0, 0, 0, 0);
+            shiftData['dateIdentifier'] = dateIdentifier;
+          }
           weekdayShiftList.push({ ...shiftData });
         } else {
-          if (alternativeScheduleShift) {
-            if (this.getWeekNumber(shiftData.startAt) % 2 === 0) {
-              currentScheduleShift = alternativeScheduleShift;
-            } else {
-              currentScheduleShift = scheduleShift;
-            }
+          do {
+            if (alternativeScheduleShift) {
+              if (this.getWeekNumber(shiftData.startAt) % 2 === 0) {
+                currentScheduleShift = alternativeScheduleShift;
+              } else {
+                currentScheduleShift = scheduleShift;
+              }
 
-            shiftData['startAt'] = this.getNextDate(
-              weekdayShiftList[weekdayShiftList.length - 1].startAt,
-              7,
-              currentScheduleShift.startAt,
-            );
-            shiftData['endAt'] = this.getNextDate(
-              weekdayShiftList[weekdayShiftList.length - 1].endAt,
-              7,
-              currentScheduleShift.endAt,
-            );
-          } else {
-            shiftData['startAt'] = this.getNextDate(
-              weekdayShiftList[weekdayShiftList.length - 1].startAt,
-              7,
-            );
-            shiftData['endAt'] = this.getNextDate(
-              weekdayShiftList[weekdayShiftList.length - 1].endAt,
-              7,
-            );
-          }
+              shiftData['startAt'] = this.getNextDate(
+                shiftData.startAt,
+                7,
+                currentScheduleShift.startAt,
+              );
+              shiftData['endAt'] = this.getNextDate(
+                shiftData.endAt,
+                7,
+                currentScheduleShift.endAt,
+              );
+            } else {
+              shiftData['startAt'] = this.getNextDate(
+                shiftData.startAt,
+                7,
+                currentScheduleShift.startAt,
+              );
+              shiftData['endAt'] = this.getNextDate(
+                shiftData.endAt,
+                7,
+                currentScheduleShift.endAt,
+              );
+            }
+          } while (this.isDateUnavailable(shiftData, events));
           const dateIdentifier = new Date(shiftData['startAt']);
           dateIdentifier.setUTCHours(0, 0, 0, 0);
           shiftData['dateIdentifier'] = dateIdentifier;
@@ -339,17 +360,32 @@ export class SchedulesService {
       );
 
     const eventList: CreateEventDto[] = [];
+    const existingEvents = await this.prisma.event.findMany({
+      where: {
+        startAt: {
+          gte: semester.startAt,
+        },
+        endAt: {
+          lte: semester.endAt,
+        },
+        isActive: true,
+        OR: [
+          { isBlocking: true },
+          { assetId: asset.uuid },
+          { staffId: staff.uuid },
+        ],
+      },
+    });
+
+    const eventData: CreateEventDto = {
+      startAt: firstEventStartAt,
+      endAt: firstEventEndAt,
+      client: { uuid: schedule.clientId },
+      staff: { ...staff },
+      asset: { ...asset },
+    };
 
     for (let i = 0; i < numberOfEvents; i++) {
-      const eventData: CreateEventDto = {
-        startAt: firstEventStartAt,
-        endAt: firstEventEndAt,
-        client: { uuid: schedule.clientId },
-        staff: { ...staff },
-        asset: { ...asset },
-        note: `Schemalagt event nr: ${i + 1}/${numberOfEvents}`,
-      };
-
       if (eventList[0]) {
         eventData['startAt'] = this.getNextDate(
           eventList[i - 1].startAt,
@@ -361,9 +397,7 @@ export class SchedulesService {
         );
       }
 
-      while (
-        !(await this.eventsService.checkDateAvailability(eventData, semester))
-      ) {
+      while (this.isDateUnavailable(eventData, existingEvents)) {
         eventData['startAt'] = this.getNextDate(eventData.startAt, 7);
         eventData['endAt'] = this.getNextDate(eventData.endAt, 7);
 
@@ -374,7 +408,9 @@ export class SchedulesService {
         }
       }
 
-      eventList.push(eventData);
+      eventData['note'] = `Schemalagt event nr: ${i + 1}/${numberOfEvents}`;
+
+      eventList.push({ ...eventData });
     }
 
     return eventList;
@@ -476,5 +512,13 @@ export class SchedulesService {
     const weekNumber = Math.floor(timeDifference / 1000 / 3600 / 24 / 7 + 1);
 
     return weekNumber;
+  }
+
+  private isDateUnavailable(date: any, events: Event[]) {
+    return events.some(
+      (event) =>
+        (date.startAt > event.startAt && date.startAt < event.endAt) ||
+        (date.endAt > event.startAt && date.endAt < event.endAt),
+    );
   }
 }

@@ -29,8 +29,9 @@ export class PrismaService
     });
   }
   private readonly logger = new Logger(PrismaService.name);
+
   async onModuleInit() {
-    await this.$connect;
+    await this.$connect();
     this.$on('error', ({ message }) => {
       this.logger.error(message);
     });
